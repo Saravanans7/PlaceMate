@@ -1,0 +1,92 @@
+:root {
+  /* Colors */
+  --violet-700: #5A39DC;
+  --violet-600: #6C4AE2;
+  --violet-500: #7B5CF6;
+  --violet-400: #9A83FF;
+  --violet-300: #BFA8FF;
+  --bg: #ffffff;
+  --muted: #F6F6FF;
+  --text: #1F2330;
+  --text-muted: #5A5F72;
+  --border: #E7E8EF;
+
+  /* Radius & shadows */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-sm: 0 1px 2px rgba(0,0,0,0.06);
+  --shadow: 0 8px 24px rgba(27, 31, 59, 0.12);
+
+  /* Spacing scale */
+  --space-1: 6px;
+  --space-2: 10px;
+  --space-3: 14px;
+  --space-4: 18px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  /* Typography */
+  --font-sans: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  --h1: 42px;
+  --h2: 28px;
+  --h3: 18px;
+  --body: 15px;
+
+  /* Transitions */
+  --ease: cubic-bezier(.2,.8,.2,1);
+  --speed: 160ms;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background: var(--bg);
+  color: var(--text);
+  font-size: var(--body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.container { max-width: 1180px; margin: 0 auto; padding: var(--space-5); }
+.row { display: flex; gap: var(--space-4); }
+.col { flex: 1; }
+
+.btn { cursor: pointer; border: 0; padding: 10px 16px; border-radius: var(--radius-sm); font-weight: 600; transition: all var(--speed) var(--ease); }
+.btn:focus-visible { outline: 3px solid var(--violet-300); outline-offset: 2px; }
+.btn-primary { background: var(--violet-600); color: #fff; box-shadow: var(--shadow-sm); }
+.btn-primary:hover { background: var(--violet-700); transform: translateY(-1px); }
+.btn-secondary { background: transparent; border: 2px solid var(--violet-500); color: var(--violet-600); }
+.btn-secondary:hover { background: var(--muted); }
+
+.card { background: #fff; border-radius: var(--radius-md); box-shadow: var(--shadow); overflow: hidden; border: 1px solid var(--border); }
+.card-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-4); background: linear-gradient(180deg, #FAFAFF, #FBFBFF); border-bottom: 1px solid var(--border); }
+.card-header h3 { font-size: var(--h3); margin: 0; }
+.card-body { padding: var(--space-4); }
+
+.table-wrapper { overflow: auto; }
+.table { width: 100%; border-collapse: separate; border-spacing: 0; }
+.table th, .table td { padding: 12px 14px; border-bottom: 1px solid var(--border); text-align: left; }
+.table thead th { position: sticky; top: 0; background: #fff; z-index: 1; font-weight: 700; font-size: 13px; color: var(--text-muted); }
+.table tbody tr:nth-child(even) { background: #FAFAFD; }
+.table tbody tr:hover { background: #F4F2FF; }
+
+.form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: var(--space-3); }
+.form-field span { color: var(--text-muted); font-size: 13px; }
+.form-field input, .form-field select, .form-field textarea { padding: 12px 12px; border-radius: 10px; border: 1px solid var(--border); transition: border var(--speed) var(--ease), box-shadow var(--speed) var(--ease); background: #fff; }
+.form-field input:focus, .form-field select:focus, .form-field textarea:focus { outline: none; border-color: var(--violet-400); box-shadow: 0 0 0 4px rgba(123,92,246,0.12); }
+
+.modal-overlay { position: fixed; inset: 0; background: rgba(14, 15, 30, 0.45); display: grid; place-items: center; padding: var(--space-5); }
+.modal { background: #fff; width: min(720px, 94vw); border-radius: var(--radius-lg); box-shadow: var(--shadow); border: 1px solid var(--border); }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: var(--space-4); border-bottom: 1px solid var(--border); }
+.modal-body { padding: var(--space-4); }
+
+.hero { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: var(--space-5); align-items: center; }
+.hero h1 { font-size: var(--h1); line-height: 1.15; margin: 0 0 var(--space-2); }
+.hero p { font-size: 18px; color: var(--text-muted); }
+.cta { display: flex; gap: var(--space-3); margin-top: var(--space-4); }
+
+
+

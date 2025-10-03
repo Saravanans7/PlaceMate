@@ -1,0 +1,97 @@
+import Drive from '../models/Drive.js';
+import Registration from '../models/Registration.js';
+import { sendPlacedEmail } from '../services/emailService.js';
+
+export async function listDrives(req, res, next) {
+  try {
+    const { date } = req.query;
+    const q = {};
+    if (date === 'today') {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date();
+      end.setHours(23, 59, 59, 999);
+      q.date = { $gte: start, $lte: end };
+    }
+    const drives = await Drive.find(q).populate('company registration');
+    res.json({ success: true, data: drives });
+  } catch (e) { next(e); }
+}
+
+export async function createDrive(req, res, next) {
+  try {
+    const { registration: registrationId } = req.body;
+    const reg = await Registration.findById(registrationId).populate('company');
+    if (!reg) return res.status(404).json({ success: false, message: 'Registration not found' });
+    const drive = await Drive.create({
+      registration: reg._id,
+      company: reg.company?._id,
+      date: reg.driveDate,
+      rounds: (reg.company?.roundsTemplate || []).map((r) => ({ name: r.name, description: r.description, shortlisted: [], results: [] })),
+    });
+    res.status(201).json({ success: true, data: drive });
+  } catch (e) { next(e); }
+}
+
+export async function getDrive(req, res, next) {
+  try {
+    const drive = await Drive.findById(req.params.id).populate('company registration');
+    if (!drive) return res.status(404).json({ success: false, message: 'Not found' });
+    res.json({ success: true, data: drive });
+  } catch (e) { next(e); }
+}
+
+export async function addAnnouncement(req, res, next) {
+  try {
+    const drive = await Drive.findById(req.params.id);
+    if (!drive) return res.status(404).json({ success: false, message: 'Not found' });
+    drive.announcements.push({ text: req.body.text, postedBy: req.user._id, postedAt: new Date() });
+    await drive.save();
+    res.json({ success: true, data: drive });
+  } catch (e) { next(e); }
+}
+
+export async function shortlistRound(req, res, next) {
+  try {
+    const { roundIndex } = req.params;
+    const { studentIds } = req.body;
+    const drive = await Drive.findById(req.params.id);
+    if (!drive) return res.status(404).json({ success: false, message: 'Not found' });
+    drive.rounds[roundIndex].shortlisted = studentIds;
+    await drive.save();
+    res.json({ success: true, data: drive });
+  } catch (e) { next(e); }
+}
+
+export async function roundResults(req, res, next) {
+  try {
+    const { roundIndex } = req.params;
+    const { results } = req.body;
+    const drive = await Drive.findById(req.params.id);
+    if (!drive) return res.status(404).json({ success: false, message: 'Not found' });
+    drive.rounds[roundIndex].results = results;
+    await drive.save();
+    res.json({ success: true, data: drive });
+  } catch (e) { next(e); }
+}
+
+export async function finalizeDrive(req, res, next) {
+  try {
+    const { finalSelected, close } = req.body;
+    const drive = await Drive.findById(req.params.id).populate('company');
+    if (!drive) return res.status(404).json({ success: false, message: 'Not found' });
+    drive.finalSelected = finalSelected || [];
+    if (close) drive.isClosed = true;
+    await drive.save();
+    // Send placed emails
+    const companyName = drive.company?.name || 'Company';
+    // In real app, fetch emails of selected students
+    for (const sid of drive.finalSelected) {
+      // placeholder: send to SMTP_USER if set
+      if (process.env.SMTP_USER) await sendPlacedEmail(companyName, process.env.SMTP_USER);
+    }
+    res.json({ success: true, data: drive });
+  } catch (e) { next(e); }
+}
+
+
