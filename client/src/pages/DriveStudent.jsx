@@ -7,11 +7,14 @@ export default function DriveStudent() {
   const [drive, setDrive] = useState(null)
 
   useEffect(() => {
-    // simplified: no direct drive id by company, this is a placeholder view
-    fetch('/api/drives?date=today', { credentials: 'include' }).then(r=>r.json()).then(d=>{
-      const match = (d.data||[]).find(x=> (x.company?.name||x.registration?.companyNameCached) === companyName)
-      setDrive(match||null)
-    })
+    // Fetch all drives and pick the latest by date for this company
+    fetch('/api/drives', { credentials: 'include' })
+      .then(r=>r.json())
+      .then(d=>{
+        const drives = (d.data||[]).filter(x => (x.company?.name||x.registration?.companyNameCached) === companyName)
+        drives.sort((a,b)=> new Date(b.date) - new Date(a.date))
+        setDrive(drives[0]||null)
+      })
   }, [companyName])
 
   if (!drive) return <div className="container"><p>Drive info will appear here on the day.</p></div>

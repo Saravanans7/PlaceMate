@@ -23,12 +23,7 @@ export async function createDrive(req, res, next) {
     const { registration: registrationId } = req.body;
     const reg = await Registration.findById(registrationId).populate('company');
     if (!reg) return res.status(404).json({ success: false, message: 'Registration not found' });
-    const drive = await Drive.create({
-      registration: reg._id,
-      company: reg.company?._id,
-      date: reg.driveDate,
-      rounds: (reg.company?.roundsTemplate || []).map((r) => ({ name: r.name, description: r.description, shortlisted: [], results: [] })),
-    });
+    const drive = await createDriveFromRegistration(reg);
     res.status(201).json({ success: true, data: drive });
   } catch (e) { next(e); }
 }
@@ -91,6 +86,34 @@ export async function finalizeDrive(req, res, next) {
       if (process.env.SMTP_USER) await sendPlacedEmail(companyName, process.env.SMTP_USER);
     }
     res.json({ success: true, data: drive });
+  } catch (e) { next(e); }
+}
+
+// Helper to create a drive document from a populated registration
+export async function createDriveFromRegistration(reg) {
+  return await Drive.create({
+    registration: reg._id,
+    company: reg.company?._id,
+    date: reg.driveDate,
+    rounds: (reg.company?.roundsTemplate || []).map((r) => ({ name: r.name, description: r.description, shortlisted: [], results: [] })),
+  });
+}
+
+// Backfill today's drives for registrations that don't yet have a drive
+export async function backfillTodayDrives(req, res, next) {
+  try {
+    const start = new Date(); start.setHours(0,0,0,0);
+    const end = new Date(); end.setHours(23,59,59,999);
+    const regs = await Registration.find({ driveDate: { $gte: start, $lte: end }, status: 'open' }).populate('company');
+    const created = [];
+    for (const reg of regs) {
+      const exists = await Drive.findOne({ registration: reg._id });
+      if (!exists) {
+        const d = await createDriveFromRegistration(reg);
+        created.push(d._id);
+      }
+    }
+    res.json({ success: true, createdCount: created.length, createdIds: created });
   } catch (e) { next(e); }
 }
 

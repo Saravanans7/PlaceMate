@@ -12,10 +12,12 @@ import Profile from './pages/Profile.jsx'
 import RegisterCompany from './pages/RegisterCompany.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import AuthGuard from './components/AuthGuard.jsx'
+import Navbar from './components/Navbar.jsx'
 
 export default function App() {
   return (
     <AuthProvider>
+      <Navbar />
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />

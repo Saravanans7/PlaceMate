@@ -26,6 +26,9 @@ export default function CompanyDetail() {
           {user.role === 'staff' && (
             <Link className="btn btn-primary" to={`/company/create-registration?companyId=${company._id}`}>Open Registration</Link>
           )}
+          {user.role === 'student' && (
+            <Link className="btn btn-primary" to={`/company/${encodeURIComponent(company.name)}/register`}>Register</Link>
+          )}
           <Link className="btn btn-secondary" to={`/company/${encodeURIComponent(company.name)}/interview-experience`}>Interview Experiences</Link>
         </div>
       </Card>

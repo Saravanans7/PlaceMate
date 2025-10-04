@@ -20,6 +20,9 @@ import experienceRoutes from './routes/experiences.js';
 import userRoutes from './routes/users.js';
 import statsRoutes from './routes/stats.js';
 import { scheduleCronJobs } from './lib/cron.js';
+import Registration from './models/Registration.js';
+import Drive from './models/Drive.js';
+import { createDriveFromRegistration } from './controllers/driveController.js';
 
 const app = express();
 
@@ -81,6 +84,20 @@ connectDB()
   .then(() => {
     app.listen(PORT, () => console.log(`Server running on :${PORT}`));
     scheduleCronJobs();
+    // On startup, backfill today's drives if missing (non-blocking)
+    (async () => {
+      try {
+        const start = new Date(); start.setHours(0,0,0,0);
+        const end = new Date(); end.setHours(23,59,59,999);
+        const regs = await Registration.find({ driveDate: { $gte: start, $lte: end }, status: 'open' }).populate('company');
+        for (const reg of regs) {
+          const exists = await Drive.findOne({ registration: reg._id });
+          if (!exists) await createDriveFromRegistration(reg);
+        }
+      } catch (e) {
+        console.error('Startup backfill error', e);
+      }
+    })();
   })
   .catch((err) => {
     console.error('Failed to connect DB', err);

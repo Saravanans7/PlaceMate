@@ -18,8 +18,15 @@ export default function RegisterCompany() {
 
   async function submit() {
     if (!registration) return
-    const r = await fetch(`/api/registrations/${registration._id}/apply`, { method:'POST', headers: { 'Content-Type':'application/json' }, credentials: 'include', body: JSON.stringify({ resumeIndex, answers: [] }) })
-    const d = await r.json(); setMessage(r.ok ? 'Registered successfully' : d.message)
+    const r = await fetch(`/api/applications/registrations/${registration._id}/apply`, { method:'POST', headers: { 'Content-Type':'application/json' }, credentials: 'include', body: JSON.stringify({ resumeIndex, answers: [] }) })
+    const d = await r.json()
+    if (r.ok) {
+      setMessage('Registered successfully')
+      // Redirect to dashboard after successful registration
+      setTimeout(() => window.location.href = '/dashboard', 1500)
+    } else {
+      setMessage(d.message || 'Registration failed')
+    }
   }
 
   if (!registration) return <div className="container"><p>No open registration found for {companyName}.</p></div>
