@@ -5,7 +5,6 @@ import { Card, Button } from '../components/UI.jsx'
 export default function RegisterCompany() {
   const { companyName } = useParams()
   const [registration, setRegistration] = useState(null)
-  const [resumeIndex, setResumeIndex] = useState(0)
   const [message, setMessage] = useState('')
 
   useEffect(() => {
@@ -18,7 +17,13 @@ export default function RegisterCompany() {
 
   async function submit() {
     if (!registration) return
-    const r = await fetch(`/api/applications/registrations/${registration._id}/apply`, { method:'POST', headers: { 'Content-Type':'application/json' }, credentials: 'include', body: JSON.stringify({ resumeIndex, answers: [] }) })
+    
+    const r = await fetch(`/api/registrations/${registration._id}/apply`, { 
+      method:'POST', 
+      headers: { 'Content-Type':'application/json' }, 
+      credentials: 'include', 
+      body: JSON.stringify({ answers: [] }) 
+    })
     const d = await r.json()
     if (r.ok) {
       setMessage('Registered successfully')
@@ -34,15 +39,9 @@ export default function RegisterCompany() {
     <div className="container">
       <Card title={`Register — ${companyName}`}>
         <p><b>Drive Date:</b> {new Date(registration.driveDate).toLocaleString()}</p>
-        <label className="form-field">
-          <span>Resume Index</span>
-          <select value={resumeIndex} onChange={e=>setResumeIndex(Number(e.target.value))}>
-            <option value={0}>Default</option>
-            <option value={1}>Resume 2</option>
-            <option value={2}>Resume 3</option>
-          </select>
-        </label>
-        <Button onClick={submit}>Apply</Button>
+        <p>Click the button below to register for this company drive.</p>
+        
+        <Button onClick={submit}>Register</Button>
         {message && <p>{message}</p>}
       </Card>
     </div>

@@ -18,7 +18,7 @@ export default function DriveStaff() {
     // Load applicants for this drive's registration
     if (d.data?.registration?._id) {
       console.log('Loading applicants for registration:', d.data.registration._id)
-      const appR = await fetch(`/api/applications/registrations/${d.data.registration._id}/applicants`, { credentials: 'include' })
+      const appR = await fetch(`/api/registrations/${d.data.registration._id}/applicants`, { credentials: 'include' })
       const appD = await appR.json()
       console.log('Applicants data:', appD)
       setApplicants(appD.data || [])

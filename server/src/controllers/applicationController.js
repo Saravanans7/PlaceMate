@@ -4,14 +4,15 @@ import Registration from '../models/Registration.js';
 export async function applyToRegistration(req, res, next) {
   try {
     const regId = req.params.id;
-    const { resumeIndex = 0, answers = [] } = req.body;
+    const { answers = [] } = req.body;
     const reg = await Registration.findById(regId);
     if (!reg) return res.status(404).json({ success: false, message: 'Registration not found' });
-    const resume = req.user.resumes?.[resumeIndex];
+    
+    // Create application without resume
     const app = await Application.create({
       registration: reg._id,
       student: req.user._id,
-      resumeUrl: resume?.url,
+      resumeUrl: null, // No resume required
       answers,
     });
     res.status(201).json({ success: true, data: app });

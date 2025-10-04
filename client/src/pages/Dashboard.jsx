@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
-import { Card, Table } from '../components/UI.jsx'
+import { Card, Table, Button } from '../components/UI.jsx'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -15,7 +15,7 @@ export default function Dashboard() {
     if (user.role === 'staff') {
       fetch('/api/stats/batches', { credentials: 'include' }).then(r=>r.json()).then(d=>setBatches(d.data||[]))
     } else if (user.role === 'student' && user._id) {
-      fetch(`/api/applications/users/${user._id}/applications`, { credentials: 'include' })
+      fetch(`/api/users/${user._id}/applications`, { credentials: 'include' })
         .then(r=>r.json())
         .then(d=>{
           console.log('Applications data:', d)
@@ -72,7 +72,7 @@ export default function Dashboard() {
         <Card title="Registered companies" actions={
           <Button onClick={() => {
             if (user._id) {
-              fetch(`/api/applications/users/${user._id}/applications`, { credentials: 'include' })
+              fetch(`/api/users/${user._id}/applications`, { credentials: 'include' })
                 .then(r=>r.json())
                 .then(d=>{
                   console.log('Refreshed applications:', d)
