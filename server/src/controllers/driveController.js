@@ -1,6 +1,5 @@
 import Drive from '../models/Drive.js';
 import Registration from '../models/Registration.js';
-import { sendPlacedEmail } from '../services/emailService.js';
 
 export async function listDrives(req, res, next) {
   try {
@@ -78,13 +77,6 @@ export async function finalizeDrive(req, res, next) {
     drive.finalSelected = finalSelected || [];
     if (close) drive.isClosed = true;
     await drive.save();
-    // Send placed emails
-    const companyName = drive.company?.name || 'Company';
-    // In real app, fetch emails of selected students
-    for (const sid of drive.finalSelected) {
-      // placeholder: send to SMTP_USER if set
-      if (process.env.SMTP_USER) await sendPlacedEmail(companyName, process.env.SMTP_USER);
-    }
     res.json({ success: true, data: drive });
   } catch (e) { next(e); }
 }

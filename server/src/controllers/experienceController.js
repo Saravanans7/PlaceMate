@@ -1,18 +1,41 @@
 import InterviewExperience from '../models/InterviewExperience.js';
+import Company from '../models/Company.js';
 
 export async function createExperience(req, res, next) {
   try {
-    const exp = await InterviewExperience.create({ ...req.body, student: req.user._id });
+    const { companyName, experience } = req.body;
+    
+    // Find company by name
+    const company = await Company.findOne({ name: companyName });
+    if (!company) {
+      return res.status(404).json({ success: false, message: 'Company not found' });
+    }
+    
+    const exp = await InterviewExperience.create({ 
+      student: req.user._id,
+      company: company._id,
+      companyNameCached: companyName,
+      content: experience,
+      status: 'pending'
+    });
     res.status(201).json({ success: true, data: exp });
   } catch (e) { next(e); }
 }
 
 export async function listExperiences(req, res, next) {
   try {
-    const { status } = req.query;
+    const { status, companyName } = req.query;
     const q = {};
+    
     if (status) q.status = status;
-    const exps = await InterviewExperience.find(q).sort({ createdAt: -1 });
+    if (companyName) q.companyNameCached = companyName;
+    
+    // If no status specified and user is student, only show approved experiences
+    if (!status && req.user?.role === 'student') {
+      q.status = 'approved';
+    }
+    
+    const exps = await InterviewExperience.find(q).populate('student').sort({ createdAt: -1 });
     res.json({ success: true, data: exps });
   } catch (e) { next(e); }
 }
@@ -22,6 +45,18 @@ export async function approveExperience(req, res, next) {
     const exp = await InterviewExperience.findByIdAndUpdate(
       req.params.id,
       { status: 'approved', approvedBy: req.user._id, approvedAt: new Date() },
+      { new: true }
+    );
+    if (!exp) return res.status(404).json({ success: false, message: 'Not found' });
+    res.json({ success: true, data: exp });
+  } catch (e) { next(e); }
+}
+
+export async function rejectExperience(req, res, next) {
+  try {
+    const exp = await InterviewExperience.findByIdAndUpdate(
+      req.params.id,
+      { status: 'rejected', approvedBy: req.user._id, approvedAt: new Date() },
       { new: true }
     );
     if (!exp) return res.status(404).json({ success: false, message: 'Not found' });

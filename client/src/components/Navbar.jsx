@@ -22,6 +22,9 @@ export default function Navbar() {
         <div style={{ display: 'flex', gap: 12 }}>
           <Link to="/dashboard">Dashboard</Link>
           <Link to="/company">Companies</Link>
+          {user.role === 'staff' && (
+            <Link to="/staff/experience-approval">Review Experiences</Link>
+          )}
           <Link to="/student/profile">Profile</Link>
         </div>
       </div>

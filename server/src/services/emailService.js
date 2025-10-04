@@ -67,10 +67,11 @@ export async function sendPlacedEmail(companyName, studentEmail) {
   const subject = `Congratulations! Placement at ${companyName}`;
   const html = render(
     `<p>Congratulations on being placed at <b>{{company}}</b>!</p>
-     <p>Please submit your interview experience: <a href="{{link}}">Share experience</a></p>`,
+     <p>Please submit your interview experience to help other students: <a href="{{link}}">Share your experience</a></p>
+     <p>Your experience will be reviewed by staff before being published.</p>`,
     {
       company: companyName,
-      link: `${process.env.FRONTEND_URL}/company/${encodeURIComponent(companyName)}/interview-experience`,
+      link: `${process.env.FRONTEND_URL}/company/${encodeURIComponent(companyName)}/add-interview-experience`,
     }
   );
   await t.sendMail({ from: process.env.SMTP_USER || 'noreply@example.com', to: studentEmail, subject, html });

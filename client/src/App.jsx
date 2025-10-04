@@ -10,6 +10,8 @@ import DriveStudent from './pages/DriveStudent.jsx'
 import Experiences from './pages/Experiences.jsx'
 import Profile from './pages/Profile.jsx'
 import RegisterCompany from './pages/RegisterCompany.jsx'
+import AddInterviewExperience from './pages/AddInterviewExperience.jsx'
+import ExperienceApproval from './pages/ExperienceApproval.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import AuthGuard from './components/AuthGuard.jsx'
 import Navbar from './components/Navbar.jsx'
@@ -28,6 +30,8 @@ export default function App() {
         <Route path="/drive/:companyName" element={<AuthGuard><DriveStudent /></AuthGuard>} />
         <Route path="/staff/drive/:id" element={<AuthGuard><DriveStaff /></AuthGuard>} />
         <Route path="/company/:companyName/interview-experience" element={<AuthGuard><Experiences /></AuthGuard>} />
+        <Route path="/company/:companyName/add-interview-experience" element={<AuthGuard><AddInterviewExperience /></AuthGuard>} />
+        <Route path="/staff/experience-approval" element={<AuthGuard><ExperienceApproval /></AuthGuard>} />
         <Route path="/student/profile" element={<AuthGuard><Profile /></AuthGuard>} />
         <Route path="/company/:companyName/register" element={<AuthGuard><RegisterCompany /></AuthGuard>} />
         <Route path="*" element={<Navigate to="/" />} />

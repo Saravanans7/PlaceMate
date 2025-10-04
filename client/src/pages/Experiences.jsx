@@ -7,8 +7,8 @@ export default function Experiences() {
   const [items, setItems] = useState([])
 
   useEffect(() => {
-    fetch('/api/experiences?status=approved').then(r=>r.json()).then(d=>{
-      setItems((d.data||[]).filter(x=> x.companyNameCached===companyName))
+    fetch(`/api/experiences?companyName=${encodeURIComponent(companyName)}`).then(r=>r.json()).then(d=>{
+      setItems(d.data||[])
     })
   }, [companyName])
 
@@ -18,12 +18,20 @@ export default function Experiences() {
         {items.length===0 && <p>No experiences yet.</p>}
         {items.map(e=> (
           <div key={e._id} className="card" style={{padding:12, marginBottom:8}}>
-            <b>{e.title||'Untitled'}</b>
-            <p>{e.content}</p>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+              <b>{e.title||'Interview Experience'}</b>
+              <small style={{ opacity: 0.7 }}>
+                by {e.student?.name || e.student?.email || 'Anonymous'} • {new Date(e.createdAt).toLocaleDateString()}
+              </small>
+            </div>
+            <p style={{ whiteSpace: 'pre-wrap' }}>{e.content}</p>
             {Array.isArray(e.questions) && e.questions.length>0 && (
-              <ul>
-                {e.questions.map((q,i)=> <li key={i}>{q}</li>)}
-              </ul>
+              <div>
+                <b>Questions asked:</b>
+                <ul>
+                  {e.questions.map((q,i)=> <li key={i}>{q}</li>)}
+                </ul>
+              </div>
             )}
           </div>
         ))}
