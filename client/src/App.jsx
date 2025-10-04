@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import Landing from './pages/Landing.jsx'
 import Login from './pages/Login.jsx'
 import Dashboard from './pages/Dashboard.jsx'
@@ -16,10 +16,16 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import AuthGuard from './components/AuthGuard.jsx'
 import Navbar from './components/Navbar.jsx'
 
-export default function App() {
+function AppContent() {
+  const location = useLocation()
+  
+  // Pages where navbar should be hidden
+  const hideNavbarPages = ['/', '/login']
+  const shouldShowNavbar = !hideNavbarPages.includes(location.pathname)
+
   return (
-    <AuthProvider>
-      <Navbar />
+    <>
+      {shouldShowNavbar && <Navbar />}
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -36,6 +42,14 @@ export default function App() {
         <Route path="/company/:companyName/register" element={<AuthGuard><RegisterCompany /></AuthGuard>} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
+    </>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
     </AuthProvider>
   )
 }
