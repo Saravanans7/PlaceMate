@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react'
 import { Card, Table, FormInput, Button } from '../components/UI.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useToast } from '../context/ToastContext.jsx'
 
 export default function CompanyList() {
   const [search, setSearch] = useState('')
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(false)
   const { user } = useAuth()
+  const { toast } = useToast()
 
   useEffect(() => { load() }, [])
 
@@ -26,6 +28,8 @@ export default function CompanyList() {
       })))
     } catch (error) {
       console.error('Failed to load companies:', error)
+      setRows([]) // Set empty array on error
+      toast.error('Load Failed', 'Failed to load companies due to a network error')
     } finally {
       setLoading(false)
     }
@@ -43,15 +47,15 @@ export default function CompanyList() {
       })
       
       if (response.ok) {
-        alert('Company deleted successfully')
+        toast.success('Company Deleted', `${companyName} has been successfully deleted.`)
         load() // Refresh the list
       } else {
         const data = await response.json()
-        alert(data.message || 'Failed to delete company')
+        toast.error('Delete Failed', data.message || 'Failed to delete company')
       }
     } catch (error) {
       console.error('Error deleting company:', error)
-      alert('Failed to delete company')
+      toast.error('Delete Failed', 'Failed to delete company due to a network error')
     }
   }
 
@@ -80,6 +84,9 @@ export default function CompanyList() {
           onChange={(e)=>setSearch(e.target.value)} 
           placeholder="Search by name" 
         />
+        <Button onClick={load} disabled={loading} style={{ marginTop: '8px' }}>
+          {loading ? 'Loading...' : 'Search'}
+        </Button>
         <Table columns={[
           {label:'#', render:(r, i)=>i+1},
           {label:'Company Name', render:r=>r.name},

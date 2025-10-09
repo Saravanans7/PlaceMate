@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Card, Button } from '../components/UI.jsx'
+import { useToast } from '../context/ToastContext.jsx'
 
 export default function AddInterviewExperience() {
   const { companyName } = useParams()
@@ -8,10 +9,12 @@ export default function AddInterviewExperience() {
   const [experience, setExperience] = useState('')
   const [submitting, setSubmitting] = useState(false)
   const [message, setMessage] = useState('')
+  const { toast } = useToast()
 
   async function submitExperience() {
     if (!experience.trim()) {
       setMessage('Please enter your interview experience')
+      toast.error('Validation Error', 'Please enter your interview experience')
       return
     }
 
@@ -30,12 +33,15 @@ export default function AddInterviewExperience() {
       const data = await response.json()
       if (response.ok) {
         setMessage('Experience submitted successfully! It will be reviewed by staff.')
+        toast.success('Experience Submitted', 'Your interview experience has been submitted and will be reviewed by staff.')
         setTimeout(() => navigate('/dashboard'), 2000)
       } else {
         setMessage(data.message || 'Failed to submit experience')
+        toast.error('Submission Failed', data.message || 'Failed to submit experience')
       }
     } catch (error) {
       setMessage('Error submitting experience')
+      toast.error('Submission Failed', 'Error submitting experience due to a network error')
     }
     setSubmitting(false)
   }

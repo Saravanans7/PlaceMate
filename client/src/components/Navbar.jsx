@@ -1,7 +1,7 @@
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useMemo } from 'react'
-import { FiHome, FiBriefcase, FiBookOpen, FiUser, FiLogOut } from 'react-icons/fi'
+import { FiHome, FiBriefcase, FiBookOpen, FiUser, FiLogOut, FiUserMinus } from 'react-icons/fi'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -11,16 +11,18 @@ export default function Navbar() {
   const items = useMemo(() => {
     const baseItems = [
       { to: '/dashboard', label: 'Dashboard', icon: FiHome },
-      { to: '/company', label: 'Company', icon: FiBriefcase },
-      { to: '/student/profile', label: 'Profile', icon: FiUser }
+      { to: '/company', label: 'Company', icon: FiBriefcase }
     ]
 
     // Add role-specific Interview Experience link
     if (user?.role === 'staff') {
-      baseItems.splice(2, 0, { to: '/staff/experience-approval', label: 'Interview Experience', icon: FiBookOpen })
+      baseItems.push({ to: '/staff/experience-approval', label: 'Interview Experience', icon: FiBookOpen })
+      baseItems.push({ to: '/staff/blacklist', label: 'Blacklist', icon: FiUserMinus })
     } else {
       // Students and other roles see approved experiences
-      baseItems.splice(2, 0, { to: '/experiences', label: 'Interview Experience', icon: FiBookOpen })
+      baseItems.push({ to: '/experiences', label: 'Interview Experience', icon: FiBookOpen })
+      // Only non-staff users get profile page
+      baseItems.push({ to: '/student/profile', label: 'Profile', icon: FiUser })
     }
 
     return baseItems

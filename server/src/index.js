@@ -19,6 +19,7 @@ import driveRoutes from './routes/drives.js';
 import experienceRoutes from './routes/experiences.js';
 import userRoutes from './routes/users.js';
 import statsRoutes from './routes/stats.js';
+import blacklistRoutes from './routes/blacklist.js';
 import { scheduleCronJobs } from './lib/cron.js';
 import Registration from './models/Registration.js';
 import Drive from './models/Drive.js';
@@ -75,6 +76,7 @@ app.use('/api/drives', driveRoutes);
 app.use('/api/experiences', experienceRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/stats', statsRoutes);
+app.use('/api/blacklist', blacklistRoutes);
 
 // Errors
 app.use(notFound);
