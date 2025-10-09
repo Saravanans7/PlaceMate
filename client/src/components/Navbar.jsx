@@ -1,5 +1,7 @@
-import { Link, useNavigate, useLocation } from 'react-router-dom'
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import { useMemo } from 'react'
+import { FiHome, FiBriefcase, FiBookOpen, FiUser, FiLogOut } from 'react-icons/fi'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -15,24 +17,55 @@ export default function Navbar() {
     } catch {}
   }
 
+  const isHome = location.pathname === '/'
+
+  const items = useMemo(() => ([
+    { to: '/dashboard', label: 'Dashboard', icon: FiHome },
+    { to: '/company', label: 'Company', icon: FiBriefcase },
+    { to: '/company/:companyName/interview-experience', label: 'Interview Experience', icon: FiBookOpen, isPattern: true },
+    { to: '/student/profile', label: 'Profile', icon: FiUser }
+  ]), [])
+
+  if (isHome) {
+    return (
+      <nav className="top-nav">
+        <div className="top-nav-brand">PLACEMATE</div>
+      </nav>
+    )
+  }
+
+  const matchActive = (to, isPattern) => {
+    if (isPattern) {
+      return location.pathname.includes('/interview-experience')
+    }
+    return location.pathname === to || location.pathname.startsWith(to + '/')
+  }
+
   return (
-    <nav className="nav">
-      <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-        <Link to="/dashboard" className="logo">PlaceMate</Link>
-        <div style={{ display: 'flex', gap: 12 }}>
-          <Link to="/dashboard">Dashboard</Link>
-          <Link to="/company">Companies</Link>
-          {user.role === 'staff' && (
-            <Link to="/staff/experience-approval">Review Experiences</Link>
-          )}
-          <Link to="/student/profile">Profile</Link>
+    <aside className="sidebar">
+      <div className="sidebar-inner">
+        <div className="sidebar-brand">
+          <span className="brand-compact">PM</span>
+          <span className="brand-full">PLACEMATE</span>
         </div>
+        <nav className="sidebar-nav">
+          {items.map(({ to, label, icon: Icon, isPattern }) => (
+            <NavLink
+              key={label}
+              to={isPattern ? '/company' : to}
+              className={matchActive(to, isPattern) ? 'nav-item active' : 'nav-item'}
+            >
+              <Icon className="nav-icon" />
+              <span className="nav-label">{label}</span>
+            </NavLink>
+          ))}
+        </nav>
+        <button className="nav-item logout" onClick={handleLogout}>
+          <FiLogOut className="nav-icon" />
+          <span className="nav-label">Logout</span>
+        </button>
       </div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-        <span style={{ opacity: .7 }}>{user.name || user.email || 'User'}</span>
-        <button className="btn btn-secondary" onClick={handleLogout}>Logout</button>
-      </div>
-    </nav>
+    </aside>
   )
 }
 

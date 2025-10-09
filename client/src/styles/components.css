@@ -1,26 +1,31 @@
-.nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 16px;
-    position: sticky;
-    top: 0;
-    background: rgba(255, 255, 255, 0.8);
-    backdrop-filter: blur(8px);
-    border-bottom: 1px solid var(--border);
-    z-index: 10;
-}
+/* Top nav on home */
+.top-nav { position: sticky; top: 0; background: #fff; border-bottom: 1px solid var(--border); z-index: 10; }
+.top-nav .top-nav-brand { padding: 12px 16px; font-weight: 800; color: var(--violet-600); letter-spacing: 1px; }
 
-.nav a {
-    text-decoration: none;
-    color: var(--text);
-    font-weight: 600;
-}
+/* Sidebar layout */
+.with-sidebar { padding-left: 240px; }
+.with-header .app-content { padding-top: 64px; }
+.sidebar { position: fixed; top: 0; left: 0; bottom: 0; width: 240px; background: #fff; border-right: 1px solid var(--border); z-index: 20; }
+.sidebar-inner { height: 100%; display: flex; flex-direction: column; }
+.sidebar-brand { display: flex; align-items: center; gap: 10px; padding: 16px; font-weight: 800; color: var(--violet-600); border-bottom: 1px solid var(--border); }
+.brand-compact { display: none; }
+.brand-full { display: inline-block; }
 
-.nav .logo {
-    color: var(--violet-600);
-    letter-spacing: 0.3px;
-}
+.sidebar-nav { display: flex; flex-direction: column; padding: 8px; gap: 6px; }
+.nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px; text-decoration: none; color: #000; background: #fff; border: 1px solid transparent; font-weight: 600; }
+.nav-item:hover { background: #f8fafc; }
+.nav-item.active { background: #e5e7eb; }
+.nav-icon { font-size: 18px; color: #000; }
+.nav-label { white-space: nowrap; display: inline; }
+.app-topbar { position: fixed; top: 0; left: 240px; right: 0; height: 64px; background: #fff; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 16px; z-index: 15; }
+.app-topbar-title { font-weight: 700; }
+.app-topbar-user { display: flex; align-items: center; gap: 12px; }
+.user-name { color: var(--text); font-weight: 600; }
+.profile-avatar { width: 32px; height: 32px; border-radius: 50%; border: 2px solid #d1d5db; background: #e5e7eb; display: inline-block; }
+.app-content { padding: 16px; }
+
+.logout { margin-top: auto; color: #ef4444; border: 1px solid #ef4444; background: #fff; }
+.logout .nav-icon { color: #ef4444; }
 
 .feature-grid {
     display: grid;
