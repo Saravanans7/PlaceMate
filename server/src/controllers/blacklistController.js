@@ -5,6 +5,21 @@ export async function addToBlacklist(req, res, next) {
   try {
     const { studentId, reason } = req.body;
     
+    // Validate input
+    if (!studentId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Student ID is required' 
+      });
+    }
+    
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Reason for blacklisting is required' 
+      });
+    }
+    
     // Validate student exists
     const student = await User.findById(studentId);
     if (!student) {
@@ -48,6 +63,7 @@ export async function addToBlacklist(req, res, next) {
       message: 'Student has been added to blacklist'
     });
   } catch (error) {
+    console.error('Error adding student to blacklist:', error);
     next(error);
   }
 }
@@ -56,18 +72,33 @@ export async function removeFromBlacklist(req, res, next) {
   try {
     const { blacklistId, reason } = req.body;
     
+    // Validate input
+    if (!blacklistId) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Blacklist ID is required' 
+      });
+    }
+    
+    if (!reason || !reason.trim()) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'Reason for removal is required' 
+      });
+    }
+    
     const blacklistEntry = await Blacklist.findById(blacklistId);
     if (!blacklistEntry || !blacklistEntry.isActive) {
       return res.status(404).json({ 
         success: false, 
-        message: 'Blacklist entry not found' 
+        message: 'Blacklist entry not found or already removed' 
       });
     }
     
     blacklistEntry.isActive = false;
     blacklistEntry.removedBy = req.user._id;
     blacklistEntry.removedAt = new Date();
-    blacklistEntry.removedReason = reason || 'No reason provided';
+    blacklistEntry.removedReason = reason.trim();
     
     await blacklistEntry.save();
     await blacklistEntry.populate('student addedBy removedBy', 'name email');
@@ -75,9 +106,10 @@ export async function removeFromBlacklist(req, res, next) {
     res.json({ 
       success: true, 
       data: blacklistEntry,
-      message: 'Student has been removed from blacklist'
+      message: 'Student has been removed from blacklist' 
     });
   } catch (error) {
+    console.error('Error removing student from blacklist:', error);
     next(error);
   }
 }
@@ -112,9 +144,10 @@ export async function getBlacklistedStudents(req, res, next) {
 
 export async function searchStudents(req, res, next) {
   try {
-    const { query } = req.query;
+    // Support both ?q= and ?query=
+    const q = (req.query.q || req.query.query || '').toString().trim();
     
-    if (!query || query.length < 2) {
+    if (!q || q.length < 2) {
       return res.json({ 
         success: true, 
         data: [],
@@ -126,9 +159,9 @@ export async function searchStudents(req, res, next) {
     const students = await User.find({
       role: 'student',
       $or: [
-        { name: { $regex: query, $options: 'i' } },
-        { email: { $regex: query, $options: 'i' } },
-        { rollNumber: { $regex: query, $options: 'i' } }
+        { name: { $regex: q, $options: 'i' } },
+        { email: { $regex: q, $options: 'i' } },
+        { rollNumber: { $regex: q, $options: 'i' } }
       ]
     })
     .select('name email rollNumber')

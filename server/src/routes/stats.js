@@ -8,7 +8,13 @@ router.get('/batches', authMiddleware, roleMiddleware('staff'), async (req, res,
   try {
     const pipeline = [
       { $match: { role: 'student' } },
-      { $group: { _id: '$batch', total: { $sum: 1 } } },
+      { 
+        $group: { 
+          _id: '$batch', 
+          total: { $sum: 1 },
+          placed: { $sum: { $cond: ['$isPlaced', 1, 0] } }
+        } 
+      },
       { $sort: { _id: -1 } },
     ];
     const data = await User.aggregate(pipeline);

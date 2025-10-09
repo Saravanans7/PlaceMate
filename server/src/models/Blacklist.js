@@ -5,8 +5,7 @@ const BlacklistSchema = new Schema({
   student: { 
     type: Schema.Types.ObjectId, 
     ref: 'User', 
-    required: true,
-    unique: true // Ensure a student can only be blacklisted once
+    required: true
   },
   reason: {
     type: String,
@@ -34,7 +33,7 @@ const BlacklistSchema = new Schema({
   removedReason: String
 });
 
-// Index for efficient queries
-BlacklistSchema.index({ student: 1, isActive: 1 });
+// Index for efficient queries - compound index to ensure only one active blacklist per student
+BlacklistSchema.index({ student: 1, isActive: 1 }, { unique: true, partialFilterExpression: { isActive: true } });
 
 export default mongoose.model('Blacklist', BlacklistSchema);

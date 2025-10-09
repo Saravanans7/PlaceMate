@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { Card, Table, FormInput, Button, Modal } from '../components/UI.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useToast } from '../context/ToastContext.jsx'
-import { FiUserMinus, FiUserPlus, FiSearch, FiX } from 'react-icons/fi'
+import { FiUserMinus, FiUserPlus, FiSearch } from 'react-icons/fi'
 
 export default function Blacklist() {
   const { user } = useAuth()
@@ -18,6 +18,9 @@ export default function Blacklist() {
   const [reason, setReason] = useState('')
   const [removeReason, setRemoveReason] = useState('')
 
+  // --------------------------
+  // Load Blacklisted Students
+  // --------------------------
   useEffect(() => {
     loadBlacklistedStudents()
   }, [])
@@ -33,32 +36,47 @@ export default function Blacklist() {
         toast.error('Load Failed', data.message || 'Failed to load blacklisted students')
       }
     } catch (error) {
-      toast.error('Load Failed', 'Failed to load blacklisted students due to a network error')
+      toast.error('Load Failed', 'Network error while loading blacklisted students')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
+  // --------------------------
+  // Search Students
+  // --------------------------
   async function searchStudents() {
     if (!searchQuery.trim() || searchQuery.length < 2) {
       setSearchResults([])
       return
     }
 
+    setLoading(true)
     try {
-      const response = await fetch(`/api/blacklist/search?query=${encodeURIComponent(searchQuery)}`, {
+      const response = await fetch(`/api/blacklist/search?q=${encodeURIComponent(searchQuery)}`, {
         credentials: 'include'
       })
       const data = await response.json()
       if (response.ok) {
         setSearchResults(data.data || [])
+        if (data.data.length === 0) {
+          toast.info('No Results', 'No students found matching your search criteria')
+        }
       } else {
         toast.error('Search Failed', data.message || 'Failed to search students')
+        setSearchResults([])
       }
-    } catch (error) {
-      toast.error('Search Failed', 'Failed to search students due to a network error')
+    } catch {
+      toast.error('Search Failed', 'Network error while searching students')
+      setSearchResults([])
+    } finally {
+      setLoading(false)
     }
   }
 
+  // --------------------------
+  // Add to Blacklist
+  // --------------------------
   async function addToBlacklist() {
     if (!selectedStudent || !reason.trim()) {
       toast.error('Validation Error', 'Please select a student and provide a reason')
@@ -78,7 +96,7 @@ export default function Blacklist() {
 
       const data = await response.json()
       if (response.ok) {
-        toast.success('Student Blacklisted', `${selectedStudent.name} has been added to the blacklist.`)
+        toast.success('Student Blacklisted', `${selectedStudent.name} added successfully.`)
         setShowAddModal(false)
         setSelectedStudent(null)
         setReason('')
@@ -86,13 +104,16 @@ export default function Blacklist() {
         setSearchResults([])
         loadBlacklistedStudents()
       } else {
-        toast.error('Blacklist Failed', data.message || 'Failed to add student to blacklist')
+        toast.error('Blacklist Failed', data.message || 'Failed to add student')
       }
-    } catch (error) {
-      toast.error('Blacklist Failed', 'Failed to add student to blacklist due to a network error')
+    } catch {
+      toast.error('Blacklist Failed', 'Network error while adding to blacklist')
     }
   }
 
+  // --------------------------
+  // Remove from Blacklist
+  // --------------------------
   async function removeFromBlacklist() {
     if (!selectedBlacklistEntry || !removeReason.trim()) {
       toast.error('Validation Error', 'Please provide a reason for removal')
@@ -112,19 +133,25 @@ export default function Blacklist() {
 
       const data = await response.json()
       if (response.ok) {
-        toast.success('Student Removed', `${selectedBlacklistEntry.student.name} has been removed from the blacklist.`)
+        toast.success(
+          'Student Removed',
+          `${selectedBlacklistEntry.student.name} removed from blacklist.`
+        )
         setShowRemoveModal(false)
         setSelectedBlacklistEntry(null)
         setRemoveReason('')
         loadBlacklistedStudents()
       } else {
-        toast.error('Remove Failed', data.message || 'Failed to remove student from blacklist')
+        toast.error('Remove Failed', data.message || 'Failed to remove student')
       }
-    } catch (error) {
-      toast.error('Remove Failed', 'Failed to remove student from blacklist due to a network error')
+    } catch {
+      toast.error('Remove Failed', 'Network error while removing student')
     }
   }
 
+  // --------------------------
+  // Modals
+  // --------------------------
   function openAddModal(student) {
     setSelectedStudent(student)
     setShowAddModal(true)
@@ -135,6 +162,9 @@ export default function Blacklist() {
     setShowRemoveModal(true)
   }
 
+  // --------------------------
+  // Access Restriction
+  // --------------------------
   if (user?.role !== 'staff') {
     return (
       <div className="container">
@@ -145,10 +175,13 @@ export default function Blacklist() {
     )
   }
 
+  // --------------------------
+  // Render
+  // --------------------------
   return (
     <div className="container">
-      <Card 
-        title="Student Blacklist Management" 
+      <Card
+        title="Student Blacklist Management"
         actions={
           <Button onClick={() => setShowAddModal(true)}>
             <FiUserMinus style={{ marginRight: '8px' }} />
@@ -157,52 +190,61 @@ export default function Blacklist() {
         }
       >
         {/* Search Section */}
-        <div style={{ marginBottom: '20px', padding: '16px', backgroundColor: '#f8f9fa', borderRadius: '4px' }}>
-          <h4 style={{ margin: '0 0 12px 0' }}>Search Students</h4>
+        <div
+          style={{
+            marginBottom: '20px',
+            padding: '16px',
+            backgroundColor: '#f8f9fa',
+            borderRadius: '4px'
+          }}
+        >
+          <h4>Search Students</h4>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
             <FormInput
-              label=""
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search by name, email, or roll number..."
               style={{ flex: 1 }}
+              onKeyPress={(e) => e.key === 'Enter' && searchStudents()}
             />
-            <Button onClick={searchStudents} disabled={loading}>
+            <Button onClick={searchStudents} disabled={loading || searchQuery.length < 2}>
               <FiSearch style={{ marginRight: '8px' }} />
-              Search
+              {loading ? 'Searching...' : 'Search'}
             </Button>
           </div>
-          
+
           {searchResults.length > 0 && (
             <div style={{ marginTop: '12px' }}>
-              <h5>Search Results:</h5>
-              {searchResults.map(student => (
-                <div 
-                  key={student._id} 
-                  style={{ 
-                    display: 'flex', 
-                    justifyContent: 'space-between', 
+              <h5>Search Results ({searchResults.length}):</h5>
+              {searchResults.map((student) => (
+                <div
+                  key={student._id}
+                  style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
                     alignItems: 'center',
-                    padding: '8px 12px',
+                    padding: '12px',
                     backgroundColor: student.isBlacklisted ? '#fee2e2' : '#f0f9ff',
                     border: `1px solid ${student.isBlacklisted ? '#fecaca' : '#bfdbfe'}`,
-                    borderRadius: '4px',
+                    borderRadius: '6px',
                     marginBottom: '8px'
                   }}
                 >
                   <div>
                     <strong>{student.name}</strong>
-                    <br />
-                    <small style={{ color: '#6b7280' }}>
-                      {student.email} {student.rollNumber && `• ${student.rollNumber}`}
-                    </small>
+                    <div style={{ fontSize: '12px', color: '#6b7280' }}>
+                      <div>📧 {student.email}</div>
+                      {student.rollNumber && <div>🎓 Roll: {student.rollNumber}</div>}
+                    </div>
                   </div>
+
                   {student.isBlacklisted ? (
-                    <span style={{ color: '#dc2626', fontWeight: '600' }}>Already Blacklisted</span>
+                    <span style={{ color: '#dc2626', fontSize: '12px' }}>Already Blacklisted</span>
                   ) : (
-                    <Button 
-                      variant="secondary" 
+                    <Button
+                      variant="secondary"
                       onClick={() => openAddModal(student)}
+                      style={{ fontSize: '12px', padding: '6px 12px' }}
                     >
                       <FiUserMinus style={{ marginRight: '4px' }} />
                       Blacklist
@@ -212,11 +254,31 @@ export default function Blacklist() {
               ))}
             </div>
           )}
+
+          {searchQuery.length >= 2 && searchResults.length === 0 && !loading && (
+            <div
+              style={{
+                marginTop: '12px',
+                padding: '16px',
+                textAlign: 'center',
+                backgroundColor: '#f9fafb',
+                borderRadius: '6px',
+                border: '1px solid #e5e7eb'
+              }}
+            >
+              <p style={{ color: '#6b7280' }}>
+                No students found matching "<strong>{searchQuery}</strong>"
+              </p>
+              <p style={{ fontSize: '12px', color: '#9ca3af' }}>
+                Try searching by name, email, or roll number
+              </p>
+            </div>
+          )}
         </div>
 
-        {/* Blacklisted Students List */}
+        {/* Blacklisted Students Table */}
         <div>
-          <h4 style={{ margin: '0 0 16px 0' }}>Currently Blacklisted Students</h4>
+          <h4>Currently Blacklisted Students</h4>
           {loading ? (
             <p>Loading blacklisted students...</p>
           ) : blacklistedStudents.length === 0 ? (
@@ -225,41 +287,42 @@ export default function Blacklist() {
             </p>
           ) : (
             <div className="table-card">
-              <Table columns={[
-                { label: 'Student Name', key: 'studentName' },
-                { label: 'Email', key: 'email' },
-                { label: 'Roll Number', key: 'rollNumber' },
-                { label: 'Reason', key: 'reason' },
-                { label: 'Added By', key: 'addedBy' },
-                { label: 'Added Date', key: 'addedDate' },
-                { label: 'Actions', render: r => (
-                  <Button 
-                    variant="secondary" 
-                    onClick={() => openRemoveModal(r)}
-                  >
-                    <FiUserPlus style={{ marginRight: '4px' }} />
-                    Remove
-                  </Button>
-                )}
-              ]}
-              rows={blacklistedStudents.map(entry => ({
-                _id: entry._id,
-                studentName: entry.student?.name || 'Unknown',
-                email: entry.student?.email || 'Unknown',
-                rollNumber: entry.student?.rollNumber || '-',
-                reason: entry.reason,
-                addedBy: entry.addedBy?.name || 'Unknown',
-                addedDate: new Date(entry.addedAt).toLocaleDateString(),
-                ...entry
-              }))} />
+              <Table
+                columns={[
+                  { label: 'Student Name', key: 'studentName' },
+                  { label: 'Email', key: 'email' },
+                  { label: 'Roll Number', key: 'rollNumber' },
+                  { label: 'Reason', key: 'reason' },
+                  { label: 'Added By', key: 'addedBy' },
+                  { label: 'Added Date', key: 'addedDate' },
+                  {
+                    label: 'Actions',
+                    render: (r) => (
+                      <Button variant="secondary" onClick={() => openRemoveModal(r)}>
+                        <FiUserPlus style={{ marginRight: '4px' }} />
+                        Remove
+                      </Button>
+                    )
+                  }
+                ]}
+                rows={blacklistedStudents.map((entry) => ({
+                  _id: entry._id,
+                  studentName: entry.student?.name || 'Unknown',
+                  email: entry.student?.email || 'Unknown',
+                  rollNumber: entry.student?.rollNumber || '-',
+                  reason: entry.reason,
+                  addedBy: entry.addedBy?.name || 'Unknown',
+                  addedDate: new Date(entry.addedAt).toLocaleDateString()
+                }))}
+              />
             </div>
           )}
         </div>
       </Card>
 
-      {/* Add to Blacklist Modal */}
-      <Modal 
-        open={showAddModal} 
+      {/* Add Modal */}
+      <Modal
+        open={showAddModal}
         title="Add Student to Blacklist"
         onClose={() => {
           setShowAddModal(false)
@@ -269,39 +332,42 @@ export default function Blacklist() {
       >
         {selectedStudent && (
           <div>
-            <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#f3f4f6', borderRadius: '4px' }}>
+            <div
+              style={{
+                marginBottom: '16px',
+                padding: '12px',
+                backgroundColor: '#f3f4f6',
+                borderRadius: '4px'
+              }}
+            >
               <p><strong>Student:</strong> {selectedStudent.name}</p>
               <p><strong>Email:</strong> {selectedStudent.email}</p>
-              {selectedStudent.rollNumber && <p><strong>Roll Number:</strong> {selectedStudent.rollNumber}</p>}
+              {selectedStudent.rollNumber && (
+                <p><strong>Roll Number:</strong> {selectedStudent.rollNumber}</p>
+              )}
             </div>
-            
+
             <FormInput
               label="Reason for Blacklisting"
               value={reason}
               onChange={(e) => setReason(e.target.value)}
-              placeholder="Enter the reason for blacklisting this student..."
+              placeholder="Enter the reason..."
               required
             />
-            
+
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
-              <Button variant="secondary" onClick={() => {
-                setShowAddModal(false)
-                setSelectedStudent(null)
-                setReason('')
-              }}>
+              <Button variant="secondary" onClick={() => setShowAddModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={addToBlacklist}>
-                Add to Blacklist
-              </Button>
+              <Button onClick={addToBlacklist}>Add to Blacklist</Button>
             </div>
           </div>
         )}
       </Modal>
 
-      {/* Remove from Blacklist Modal */}
-      <Modal 
-        open={showRemoveModal} 
+      {/* Remove Modal */}
+      <Modal
+        open={showRemoveModal}
         title="Remove Student from Blacklist"
         onClose={() => {
           setShowRemoveModal(false)
@@ -311,31 +377,32 @@ export default function Blacklist() {
       >
         {selectedBlacklistEntry && (
           <div>
-            <div style={{ marginBottom: '16px', padding: '12px', backgroundColor: '#fef3c7', borderRadius: '4px' }}>
+            <div
+              style={{
+                marginBottom: '16px',
+                padding: '12px',
+                backgroundColor: '#fef3c7',
+                borderRadius: '4px'
+              }}
+            >
               <p><strong>Student:</strong> {selectedBlacklistEntry.student?.name}</p>
               <p><strong>Original Reason:</strong> {selectedBlacklistEntry.reason}</p>
               <p><strong>Blacklisted On:</strong> {new Date(selectedBlacklistEntry.addedAt).toLocaleDateString()}</p>
             </div>
-            
+
             <FormInput
               label="Reason for Removal"
               value={removeReason}
               onChange={(e) => setRemoveReason(e.target.value)}
-              placeholder="Enter the reason for removing this student from blacklist..."
+              placeholder="Enter the reason..."
               required
             />
-            
+
             <div style={{ display: 'flex', gap: '8px', justifyContent: 'flex-end', marginTop: '16px' }}>
-              <Button variant="secondary" onClick={() => {
-                setShowRemoveModal(false)
-                setSelectedBlacklistEntry(null)
-                setRemoveReason('')
-              }}>
+              <Button variant="secondary" onClick={() => setShowRemoveModal(false)}>
                 Cancel
               </Button>
-              <Button onClick={removeFromBlacklist}>
-                Remove from Blacklist
-              </Button>
+              <Button onClick={removeFromBlacklist}>Remove from Blacklist</Button>
             </div>
           </div>
         )}

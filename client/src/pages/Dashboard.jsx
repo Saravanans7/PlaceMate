@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { Card, Table, Button } from '../components/UI.jsx'
+import BarChart from '../components/BarChart.jsx'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -118,11 +119,14 @@ export default function Dashboard() {
           </Card>
           
           <Card title="Batch-wise stats">
-            <div className="stats">
-              {batches.map(b=> (
-                <div className="stat" key={b._id}><h4>{b._id||'N/A'}</h4><small>Total {b.total}</small></div>
-              ))}
-            </div>
+            <BarChart 
+              data={batches.map(b => ({
+                label: b._id || 'N/A',
+                value: b.placed || 0,
+                total: b.total || 0
+              }))}
+              title="Placement Statistics by Batch"
+            />
           </Card>
         </div>
       </div>
