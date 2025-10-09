@@ -3,10 +3,9 @@ import { Link } from 'react-router-dom'
 export default function Landing() {
   return (
     <div>
-      <nav className="nav container">
-        <span className="logo">PlaceMate</span>
-        <div>
-          <Link to="/login">Login</Link>
+      <nav className="top-nav">
+        <div className="container">
+          <span className="top-nav-brand">PLACEMATE</span>
         </div>
       </nav>
       <section className="container hero">

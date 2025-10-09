@@ -20,14 +20,40 @@ import Navbar from './components/Navbar.jsx'
 
 function AppContent() {
   const location = useLocation()
+  const { user } = useAuth()
   
-  // Pages where navbar should be hidden
+  // Hide navbar on home and login pages; show sidebar elsewhere
   const hideNavbarPages = ['/', '/login']
   const shouldShowNavbar = !hideNavbarPages.includes(location.pathname)
+  const isHome = location.pathname === '/'
+  const showHeader = shouldShowNavbar && !isHome
+
+  const pageTitle = () => {
+    const p = location.pathname
+    if (p.startsWith('/dashboard')) return 'Dashboard'
+    if (p.startsWith('/company') && p.includes('/interview-experience')) return 'Interview Experience'
+    if (p.startsWith('/company') && p.includes('/create-registration')) return 'Create Registration'
+    if (p.startsWith('/company')) return 'Companies'
+    if (p.startsWith('/drive')) return 'Drives'
+    if (p.startsWith('/staff/experience-approval')) return 'Experience Approval'
+    if (p.startsWith('/student/profile')) return 'Profile'
+    if (p.startsWith('/registrations')) return 'Registrations'
+    return 'Dashboard'
+  }
 
   return (
-    <>
+    <div className={(shouldShowNavbar && !isHome ? 'with-sidebar ' : '') + (showHeader ? 'with-header' : '')}>
       {shouldShowNavbar && <Navbar />}
+      {showHeader && (
+        <div className="app-topbar">
+          <div className="app-topbar-title">{pageTitle()}</div>
+          <div className="app-topbar-user">
+            <span className="user-name">{user?.name || user?.email || 'User'}</span>
+            <span className="profile-avatar" />
+          </div>
+        </div>
+      )}
+      <div className="app-content">
       <Routes>
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
@@ -46,7 +72,8 @@ function AppContent() {
         <Route path="/company/:companyName/register" element={<AuthGuard><RegisterCompany /></AuthGuard>} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
-    </>
+      </div>
+    </div>
   )
 }
 
