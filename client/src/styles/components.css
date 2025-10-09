@@ -1088,3 +1088,79 @@
         width: 100%;
     }
 }
+
+/* Student Drive Progress Styles */
+.status-icon {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
+}
+
+.status-icon.success {
+    color: #16a34a;
+}
+
+.status-icon.error {
+    color: #dc2626;
+}
+
+.status-icon.warning {
+    color: #d97706;
+}
+
+.status-icon.info {
+    color: var(--violet-500);
+}
+
+.status-icon.pending {
+    color: #6b7280;
+}
+
+.round-item.eliminated-round {
+    border-color: #dc2626;
+    background: #fef2f2;
+}
+
+.round-item.eliminated-round .round-header h4 {
+    color: #dc2626;
+}
+
+.round-status.eliminated {
+    background: #dc2626;
+    color: white;
+}
+
+.round-status.rejected {
+    background: #dc2626;
+    color: white;
+}
+
+.round-status.shortlisted {
+    background: var(--violet-500);
+    color: white;
+}
+
+.round-status.current {
+    background: #d97706;
+    color: white;
+}
+
+.round-status.pending {
+    background: #6b7280;
+    color: white;
+}
+
+.round-status.completed {
+    background: #16a34a;
+    color: white;
+}
+
+.round-status.selected {
+    background: #16a34a;
+    color: white;
+}
+
+.round-status.passed {
+    background: #16a34a;
+    color: white;
+}

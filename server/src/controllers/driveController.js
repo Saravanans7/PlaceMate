@@ -2,6 +2,7 @@ import Drive from '../models/Drive.js';
 import Registration from '../models/Registration.js';
 import Company from '../models/Company.js';
 import User from '../models/User.js';
+import Application from '../models/Application.js';
 
 export async function listDrives(req, res, next) {
   try {
@@ -35,6 +36,139 @@ export async function getDrive(req, res, next) {
     if (!drive) return res.status(404).json({ success: false, message: 'Not found' });
     res.json({ success: true, data: drive });
   } catch (e) { next(e); }
+}
+
+export async function getDriveWithStudentProgress(req, res, next) {
+  try {
+    const { companyName } = req.params;
+    const studentId = req.user._id;
+    
+    // Find the latest drive for this company
+    const drives = await Drive.find({})
+      .populate('company registration')
+      .sort({ date: -1 });
+    
+    const drive = drives.find(d => 
+      (d.company?.name || d.registration?.companyNameCached) === companyName
+    );
+    
+    if (!drive) {
+      return res.status(404).json({ success: false, message: 'Drive not found for this company' });
+    }
+    
+    // Check if student has applied for this drive
+    const application = await Application.findOne({
+      registration: drive.registration._id,
+      student: studentId,
+      status: 'registered'
+    });
+    
+    if (!application) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'You are not registered for this drive' 
+      });
+    }
+    
+    // Calculate student's progress through rounds
+    const studentProgress = calculateStudentProgress(drive, studentId);
+    
+    res.json({ 
+      success: true, 
+      data: {
+        ...drive.toObject(),
+        studentProgress,
+        isRegistered: true,
+        registrationDate: application.registeredAt
+      }
+    });
+  } catch (e) { next(e); }
+}
+
+function calculateStudentProgress(drive, studentId) {
+  const progress = {
+    currentRound: 0,
+    status: 'registered',
+    rounds: [],
+    isSelected: false,
+    isEliminated: false
+  };
+  
+  // Check if student is in final selected list
+  if (drive.finalSelected && drive.finalSelected.some(id => id.toString() === studentId.toString())) {
+    progress.status = 'selected';
+    progress.isSelected = true;
+    progress.currentRound = drive.rounds.length;
+  } else {
+    // Check each round to see student's progress
+    for (let i = 0; i < drive.rounds.length; i++) {
+      const round = drive.rounds[i];
+      const roundProgress = {
+        roundIndex: i,
+        name: round.name,
+        description: round.description,
+        status: 'pending', // pending, shortlisted, eliminated, completed
+        result: null,
+        notes: null
+      };
+      
+      // Check if round has results
+      if (round.results && round.results.length > 0) {
+        const studentResult = round.results.find(r => 
+          r.student && r.student.toString() === studentId.toString()
+        );
+        
+        if (studentResult) {
+          roundProgress.status = studentResult.status || 'completed';
+          roundProgress.result = studentResult.status;
+          roundProgress.notes = studentResult.notes;
+          
+          // If student was eliminated in this round
+          if (studentResult.status === 'eliminated' || studentResult.status === 'rejected') {
+            progress.status = 'eliminated';
+            progress.isEliminated = true;
+            progress.currentRound = i;
+            progress.rounds.push(roundProgress);
+            break;
+          } else if (studentResult.status === 'selected' || studentResult.status === 'passed') {
+            progress.currentRound = i + 1;
+            roundProgress.status = 'completed';
+          }
+        } else {
+          // No result yet, check if in shortlist
+          if (round.shortlisted && round.shortlisted.some(id => id.toString() === studentId.toString())) {
+            roundProgress.status = 'shortlisted';
+            progress.currentRound = i + 1;
+          }
+        }
+      } else {
+        // No results yet, check if in shortlist
+        if (round.shortlisted && round.shortlisted.some(id => id.toString() === studentId.toString())) {
+          roundProgress.status = 'shortlisted';
+          progress.currentRound = i + 1;
+        } else if (i === drive.currentRoundIndex) {
+          roundProgress.status = 'current';
+          progress.currentRound = i;
+        }
+      }
+      
+      progress.rounds.push(roundProgress);
+    }
+  }
+  
+  // Determine overall status
+  if (!progress.isSelected && !progress.isEliminated) {
+    if (progress.currentRound === drive.rounds.length) {
+      progress.status = 'awaiting_final_results';
+    } else if (progress.currentRound < drive.currentRoundIndex) {
+      progress.status = 'eliminated';
+      progress.isEliminated = true;
+    } else {
+      progress.status = 'in_progress';
+    }
+  }
+  
+  return progress;
 }
 
 export async function getOrCreateDriveByRegistration(req, res, next) {
