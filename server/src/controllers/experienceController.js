@@ -38,7 +38,10 @@ export async function listExperiences(req, res, next) {
     const q = {};
     
     if (status) q.status = status;
-    if (companyName) q.companyNameCached = companyName;
+    if (companyName) {
+      // Support both exact match and case-insensitive search
+      q.companyNameCached = { $regex: companyName, $options: 'i' };
+    }
     
     // If no status specified and user is student, only show approved experiences
     if (!status && req.user?.role === 'student') {

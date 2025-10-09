@@ -23,8 +23,7 @@ export default function AddInterviewExperience() {
         credentials: 'include',
         body: JSON.stringify({
           companyName,
-          experience: experience.trim(),
-          status: 'pending'
+          experience: experience.trim()
         })
       })
       

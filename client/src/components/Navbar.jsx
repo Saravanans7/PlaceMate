@@ -8,6 +8,24 @@ export default function Navbar() {
   const navigate = useNavigate()
   const location = useLocation()
 
+  const items = useMemo(() => {
+    const baseItems = [
+      { to: '/dashboard', label: 'Dashboard', icon: FiHome },
+      { to: '/company', label: 'Company', icon: FiBriefcase },
+      { to: '/student/profile', label: 'Profile', icon: FiUser }
+    ]
+
+    // Add role-specific Interview Experience link
+    if (user?.role === 'staff') {
+      baseItems.splice(2, 0, { to: '/staff/experience-approval', label: 'Interview Experience', icon: FiBookOpen })
+    } else {
+      // Students and other roles see approved experiences
+      baseItems.splice(2, 0, { to: '/experiences', label: 'Interview Experience', icon: FiBookOpen })
+    }
+
+    return baseItems
+  }, [user?.role])
+
   if (!user) return null
 
   const handleLogout = async () => {
@@ -19,13 +37,6 @@ export default function Navbar() {
 
   const isHome = location.pathname === '/'
 
-  const items = useMemo(() => ([
-    { to: '/dashboard', label: 'Dashboard', icon: FiHome },
-    { to: '/company', label: 'Company', icon: FiBriefcase },
-    { to: '/company/:companyName/interview-experience', label: 'Interview Experience', icon: FiBookOpen, isPattern: true },
-    { to: '/student/profile', label: 'Profile', icon: FiUser }
-  ]), [])
-
   if (isHome) {
     return (
       <nav className="top-nav">
@@ -34,10 +45,7 @@ export default function Navbar() {
     )
   }
 
-  const matchActive = (to, isPattern) => {
-    if (isPattern) {
-      return location.pathname.includes('/interview-experience')
-    }
+  const matchActive = (to) => {
     return location.pathname === to || location.pathname.startsWith(to + '/')
   }
 
@@ -49,11 +57,11 @@ export default function Navbar() {
           <span className="brand-full">PLACEMATE</span>
         </div>
         <nav className="sidebar-nav">
-          {items.map(({ to, label, icon: Icon, isPattern }) => (
+          {items.map(({ to, label, icon: Icon }) => (
             <NavLink
               key={label}
-              to={isPattern ? '/company' : to}
-              className={matchActive(to, isPattern) ? 'nav-item active' : 'nav-item'}
+              to={to}
+              className={matchActive(to) ? 'nav-item active' : 'nav-item'}
             >
               <Icon className="nav-icon" />
               <span className="nav-label">{label}</span>

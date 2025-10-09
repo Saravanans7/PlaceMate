@@ -14,7 +14,7 @@ import RegisterCompany from './pages/RegisterCompany.jsx'
 import AddInterviewExperience from './pages/AddInterviewExperience.jsx'
 import ExperienceApproval from './pages/ExperienceApproval.jsx'
 import PlacedStudentExperience from './pages/PlacedStudentExperience.jsx'
-import { AuthProvider } from './context/AuthContext.jsx'
+import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import AuthGuard from './components/AuthGuard.jsx'
 import Navbar from './components/Navbar.jsx'
 
@@ -64,6 +64,7 @@ function AppContent() {
         <Route path="/company/create-registration" element={<AuthGuard><CreateRegistration /></AuthGuard>} />
         <Route path="/drive/:companyName" element={<AuthGuard><DriveStudent /></AuthGuard>} />
         <Route path="/staff/drive/:id" element={<AuthGuard><DriveStaff /></AuthGuard>} />
+        <Route path="/experiences" element={<AuthGuard><Experiences /></AuthGuard>} />
         <Route path="/company/:companyName/interview-experience" element={<AuthGuard><Experiences /></AuthGuard>} />
         <Route path="/company/:companyName/add-interview-experience" element={<AuthGuard><AddInterviewExperience /></AuthGuard>} />
         <Route path="/placed-student/experience" element={<AuthGuard><PlacedStudentExperience /></AuthGuard>} />
