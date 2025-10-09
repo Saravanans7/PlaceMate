@@ -24,6 +24,9 @@ export default function Navbar() {
       // Only non-staff users get profile page
       baseItems.push({ to: '/student/profile', label: 'Profile', icon: FiUser })
     }
+    
+    // Add skeleton demo for development/testing
+    // baseItems.push({ to: '/skeleton-demo', label: 'Skeleton Demo', icon: FiBookOpen })
 
     return baseItems
   }, [user?.role])

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useAuth } from '../context/AuthContext.jsx'
 import { Card, Table, Button } from '../components/UI.jsx'
 import BarChart from '../components/BarChart.jsx'
+import LoadingWrapper from '../components/LoadingWrapper.jsx'
+import { SkeletonDashboard, SkeletonTable, SkeletonCard } from '../components/SkeletonComponents.jsx'
 
 export default function Dashboard() {
   const { user } = useAuth()
@@ -12,6 +14,7 @@ export default function Dashboard() {
   const [placementStatus, setPlacementStatus] = useState(null)
   const [lastRefresh, setLastRefresh] = useState(Date.now())
   const [isRefreshing, setIsRefreshing] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
 
   // Function to refresh placement status
   async function refreshPlacementStatus() {
@@ -43,22 +46,42 @@ export default function Dashboard() {
   }
 
   useEffect(() => {
-    fetch('/api/drives?date=today', { credentials: 'include' }).then(r=>r.json()).then(d=>setTodayDrives(d.data||[]))
-    fetch('/api/registrations?status=open&range=next30', { credentials: 'include' }).then(r=>r.json()).then(d=>setUpcoming(d.data||[]))
-    if (user.role === 'staff') {
-      fetch('/api/stats/batches', { credentials: 'include' }).then(r=>r.json()).then(d=>setBatches(d.data||[]))
-    } else if (user.role === 'student' && user._id) {
-      fetch(`/api/users/${user._id}/applications`, { credentials: 'include' })
-        .then(r=>r.json())
-        .then(d=>{
-          console.log('Applications data:', d)
-          setApplications(d.data||[])
-        })
-        .catch(e=>console.error('Failed to load applications:', e))
-      
-      // Fetch placement status and round progress
-      refreshPlacementStatus()
+    const loadData = async () => {
+      try {
+        const [drivesRes, registrationsRes] = await Promise.all([
+          fetch('/api/drives?date=today', { credentials: 'include' }),
+          fetch('/api/registrations?status=open&range=next30', { credentials: 'include' })
+        ])
+        
+        const [drivesData, registrationsData] = await Promise.all([
+          drivesRes.json(),
+          registrationsRes.json()
+        ])
+        
+        setTodayDrives(drivesData.data || [])
+        setUpcoming(registrationsData.data || [])
+        
+        if (user.role === 'staff') {
+          const batchesRes = await fetch('/api/stats/batches', { credentials: 'include' })
+          const batchesData = await batchesRes.json()
+          setBatches(batchesData.data || [])
+        } else if (user.role === 'student' && user._id) {
+          const applicationsRes = await fetch(`/api/users/${user._id}/applications`, { credentials: 'include' })
+          const applicationsData = await applicationsRes.json()
+          console.log('Applications data:', applicationsData)
+          setApplications(applicationsData.data || [])
+          
+          // Fetch placement status and round progress
+          await refreshPlacementStatus()
+        }
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error)
+      } finally {
+        setIsLoading(false)
+      }
     }
+    
+    loadData()
   }, [user.role, user._id])
 
   // Auto-refresh placement status every 30 seconds for students
@@ -72,9 +95,41 @@ export default function Dashboard() {
     }
   }, [user.role, user._id, placementStatus])
 
+  const staffSkeleton = (
+    <div className="container grid-2">
+      <div className="stack">
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+      <div className="stack">
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+    </div>
+  )
+
+  const studentSkeleton = (
+    <div className="container grid-2">
+      <div className="stack">
+        <SkeletonCard />
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+      <div className="stack">
+        <SkeletonCard />
+        <SkeletonCard />
+      </div>
+    </div>
+  )
+
   if (user.role === 'staff') {
     return (
-      <div className="container grid-2">
+      <LoadingWrapper 
+        isLoading={isLoading} 
+        skeletonComponent={staffSkeleton}
+        loadingMessage="Loading dashboard..."
+      >
+        <div className="container grid-2">
         <div className="stack">
           <Card title="Today's Drives" actions={
             <div className="card-actions">
@@ -109,7 +164,7 @@ export default function Dashboard() {
             </div>
           </Card>
         </div>
-        <div>
+        <div className='stack'>
           <Card title="Quick Actions">
             <div className="quick-actions">
               <a className="btn btn-primary" href="/company/create">+ Create Company</a>
@@ -130,12 +185,18 @@ export default function Dashboard() {
           </Card>
         </div>
       </div>
+      </LoadingWrapper>
     )
   }
 
   // Student dashboard
   return (
-    <div className="container grid-2">
+    <LoadingWrapper 
+      isLoading={isLoading} 
+      skeletonComponent={studentSkeleton}
+      loadingMessage="Loading dashboard..."
+    >
+      <div className="container grid-2">
       {/* Auto-refresh indicator */}
       {isRefreshing && (
         <div className="auto-refresh-indicator">
@@ -231,6 +292,15 @@ export default function Dashboard() {
               rows={upcoming.map(r=>({ company: r.company?.name || r.companyNameCached, date: new Date(r.driveDate).toLocaleString() }))} />
           </div>
         </Card>
+        
+      </div>
+      <div className='stack'>
+        <Card title="Quick actions">
+          <div className="stack">
+            <a className="btn btn-primary" href="/student/profile">Edit Profile</a>
+            <a className="btn btn-secondary" href="/student/profile">Upload Resume</a>
+          </div>
+        </Card>
         <Card title="Registered companies" actions={
           <Button onClick={async () => {
             if (user._id) {
@@ -266,15 +336,8 @@ export default function Dashboard() {
           </div>
         </Card>
       </div>
-      <div>
-        <Card title="Quick actions">
-          <div className="stack">
-            <a className="btn btn-primary" href="/student/profile">Edit Profile</a>
-            <a className="btn btn-secondary" href="/student/profile">Upload Resume</a>
-          </div>
-        </Card>
-      </div>
     </div>
+    </LoadingWrapper>
   )
 }
 

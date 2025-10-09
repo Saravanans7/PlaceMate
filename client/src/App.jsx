@@ -16,15 +16,17 @@ import AddInterviewExperience from './pages/AddInterviewExperience.jsx'
 import ExperienceApproval from './pages/ExperienceApproval.jsx'
 import PlacedStudentExperience from './pages/PlacedStudentExperience.jsx'
 import Blacklist from './pages/Blacklist.jsx'
+import SkeletonDemo from './pages/SkeletonDemo.jsx'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import { ToastProvider, useToast } from './context/ToastContext.jsx'
 import AuthGuard from './components/AuthGuard.jsx'
 import Navbar from './components/Navbar.jsx'
 import ToastContainer from './components/ToastContainer.jsx'
+import LoadingAnimation from './components/LoadingAnimation.jsx'
 
 function AppContent() {
   const location = useLocation()
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const { toasts, removeToast } = useToast()
   
   // Hide navbar on home and login pages; show sidebar elsewhere
@@ -32,6 +34,11 @@ function AppContent() {
   const shouldShowNavbar = !hideNavbarPages.includes(location.pathname)
   const isHome = location.pathname === '/'
   const showHeader = shouldShowNavbar && !isHome
+
+  // Show loading animation when user is being authenticated
+  if (loading) {
+    return <LoadingAnimation message="Authenticating..." />
+  }
 
   const pageTitle = () => {
     const p = location.pathname
@@ -78,6 +85,7 @@ function AppContent() {
         <Route path="/staff/blacklist" element={<AuthGuard><Blacklist /></AuthGuard>} />
         <Route path="/student/profile" element={<AuthGuard><Profile /></AuthGuard>} />
         <Route path="/company/:companyName/register" element={<AuthGuard><RegisterCompany /></AuthGuard>} />
+        <Route path="/skeleton-demo" element={<AuthGuard><SkeletonDemo /></AuthGuard>} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       </div>

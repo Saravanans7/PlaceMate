@@ -15,15 +15,20 @@ export function AuthProvider({ children }) {
   }, [])
 
   const login = async (identifier, password) => {
-    const r = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ identifier, password })
-    })
-    if (!r.ok) throw new Error('Login failed')
-    const data = await r.json()
-    setUser(data.user)
+    setLoading(true)
+    try {
+      const r = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ identifier, password })
+      })
+      if (!r.ok) throw new Error('Login failed')
+      const data = await r.json()
+      setUser(data.user)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const logout = async () => {

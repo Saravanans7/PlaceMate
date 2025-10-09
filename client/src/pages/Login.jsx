@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
+import LoadingAnimation from '../components/LoadingAnimation.jsx'
 import '../styles/login.css'  // Make sure to import the CSS we defined
 
 export default function Login() {
@@ -13,6 +14,7 @@ export default function Login() {
   const [demoLoading, setDemoLoading] = useState('') // 'student' | 'staff' | ''
   const [error, setError] = useState('')
   const [splash, setSplash] = useState(true)
+  const [showPostLoginLoading, setShowPostLoginLoading] = useState(false)
 
   useEffect(() => {
     const t = setTimeout(() => setSplash(false), 1200)
@@ -25,10 +27,14 @@ export default function Login() {
     setError('')
     try {
       await login(identifier, password)
-      nav('/dashboard')
+      setShowPostLoginLoading(true)
+      // Add random delay between 1.5-3 seconds
+      const delay = Math.random() * 1500 + 1500
+      setTimeout(() => {
+        nav('/dashboard')
+      }, delay)
     } catch (e) {
       setError('Invalid credentials')
-    } finally {
       setLoading(false)
     }
   }
@@ -47,17 +53,23 @@ export default function Login() {
       } else {
         await login('staffdemo@gmail.com', 'lol')
       }
-      nav('/dashboard')
+      setShowPostLoginLoading(true)
+      // Add random delay between 1.5-3 seconds
+      const delay = Math.random() * 1500 + 1500
+      setTimeout(() => {
+        nav('/dashboard')
+      }, delay)
     } catch (e) {
       setError('Unable to login to demo account')
-    } finally {
       setDemoLoading('')
     }
   }
 
   return (
     <div className="login-page">
-      {splash ? (
+      {showPostLoginLoading ? (
+        <LoadingAnimation message="Welcome! Setting up your dashboard..." />
+      ) : splash ? (
         <div className="login-splash">
           <div className="spinner-lg" />
         </div>

@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { Card, Table, FormInput, Button } from '../components/UI.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useToast } from '../context/ToastContext.jsx'
+import LoadingWrapper from '../components/LoadingWrapper.jsx'
+import { SkeletonTable, SkeletonCard } from '../components/SkeletonComponents.jsx'
 
 export default function CompanyList() {
   const [search, setSearch] = useState('')
@@ -61,23 +63,34 @@ export default function CompanyList() {
 
   const isAdmin = user?.role === 'staff'
 
-  return (
+  const skeletonComponent = (
     <div className="container">
-      <Card 
-        title="Companies" 
-        actions={
-          <div className="card-actions">
-            {isAdmin && (
-              <a className="btn btn-primary" href="/company/create">
-                + Create Company
-              </a>
-            )}
-            <Button onClick={load} disabled={loading}>
-              {loading ? 'Loading...' : 'Refresh'}
-            </Button>
-          </div>
-        }
-      >
+      <SkeletonCard />
+    </div>
+  )
+
+  return (
+    <LoadingWrapper 
+      isLoading={loading} 
+      skeletonComponent={skeletonComponent}
+      loadingMessage="Loading companies..."
+    >
+      <div className="container">
+        <Card 
+          title="Companies" 
+          actions={
+            <div className="card-actions">
+              {isAdmin && (
+                <a className="btn btn-primary" href="/company/create">
+                  + Create Company
+                </a>
+              )}
+              <Button onClick={load} disabled={loading}>
+                {loading ? 'Loading...' : 'Refresh'}
+              </Button>
+            </div>
+          }
+        >
         <FormInput 
           label="Search" 
           value={search} 
@@ -144,8 +157,9 @@ export default function CompanyList() {
             </div>
           )}
         ]} rows={rows} />
-      </Card>
-    </div>
+        </Card>
+      </div>
+    </LoadingWrapper>
   )
 }
 

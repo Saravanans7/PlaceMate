@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Card, Button } from '../components/UI.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
+import LoadingWrapper from '../components/LoadingWrapper.jsx'
+import { SkeletonCard } from '../components/SkeletonComponents.jsx'
 
 export default function CompanyDetail() {
   const { companyName } = useParams()
@@ -130,13 +132,26 @@ export default function CompanyDetail() {
     }
   }
 
+  const skeletonComponent = (
+    <div className="container grid">
+      <SkeletonCard />
+      <SkeletonCard />
+    </div>
+  )
+
   if (loading) {
     return (
-      <div className="container">
-        <Card title="Loading...">
-          <p>Loading company information...</p>
-        </Card>
-      </div>
+      <LoadingWrapper 
+        isLoading={true} 
+        skeletonComponent={skeletonComponent}
+        loadingMessage="Loading company details..."
+      >
+        <div className="container">
+          <Card title="Loading...">
+            <p>Loading company information...</p>
+          </Card>
+        </div>
+      </LoadingWrapper>
     )
   }
 
@@ -163,7 +178,12 @@ export default function CompanyDetail() {
   }
 
   return (
-    <div className="container grid">
+    <LoadingWrapper 
+      isLoading={false} 
+      skeletonComponent={skeletonComponent}
+      loadingMessage="Loading company details..."
+    >
+      <div className="container grid">
       <Card title={`${company.name} — ${company.role || ''}`}>
         <div className="company-info">
           <p><b>Location:</b> {company.location||'-'}</p>
@@ -310,6 +330,7 @@ export default function CompanyDetail() {
         ))}
       </Card>
     </div>
+    </LoadingWrapper>
   )
 }
 
