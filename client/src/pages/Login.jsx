@@ -43,9 +43,9 @@ export default function Login() {
     setDemoLoading(role)
     try {
       if (role === 'student') {
-        await login('student1', 'student123')
+        await login('studentdemo@gmail.com', 'lol')
       } else {
-        await login('admin@example.com', 'admin123')
+        await login('staffdemo@gmail.com', 'lol')
       }
       nav('/dashboard')
     } catch (e) {
