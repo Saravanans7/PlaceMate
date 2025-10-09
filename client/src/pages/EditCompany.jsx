@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useParams, useNavigate } from 'react-router-dom'
 import { Card, FormInput, Button } from '../components/UI.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useToast } from '../context/ToastContext.jsx'
 
-export default function CreateCompany() {
+export default function EditCompany() {
+  const { id } = useParams()
+  const navigate = useNavigate()
   const { user } = useAuth()
   const [name, setName] = useState('')
   const [role, setRole] = useState('')
@@ -16,19 +19,39 @@ export default function CreateCompany() {
   const [success, setSuccess] = useState('')
   const { toast } = useToast()
 
+  useEffect(() => {
+    loadCompany()
+  }, [id])
+
+  async function loadCompany() {
+    try {
+      const response = await fetch(`/api/companies/${id}`, { credentials: 'include' })
+      const data = await response.json()
+      if (response.ok) {
+        const company = data.data
+        setName(company.name || '')
+        setRole(company.role || '')
+        setLocation(company.location || '')
+        setSalaryLPA(company.salaryLPA || '')
+        setDescription(company.description || '')
+        setRounds(company.roundsTemplate?.length > 0 ? company.roundsTemplate : [{ name: '', description: '' }])
+      } else {
+        const errorMsg = data.message || 'Failed to load company'
+        setError(errorMsg)
+        toast.error('Load Failed', errorMsg)
+      }
+    } catch (error) {
+      const errorMsg = 'Failed to load company'
+      setError(errorMsg)
+      toast.error('Load Failed', errorMsg)
+    }
+  }
+
   async function submit(e) {
     e.preventDefault()
     setError(''); setSuccess('')
-    if (user?.role !== 'staff') { 
-      setError('Only staff can create companies')
-      toast.error('Permission Denied', 'Only staff can create companies')
-      return 
-    }
-    if (!name.trim()) { 
-      setError('Name is required')
-      toast.error('Validation Error', 'Company name is required')
-      return 
-    }
+    if (user?.role !== 'staff') { setError('Only staff can edit companies'); return }
+    if (!name.trim()) { setError('Name is required'); return }
     setLoading(true)
     try {
       const payload = {
@@ -39,20 +62,20 @@ export default function CreateCompany() {
         description: description.trim() || undefined,
         roundsTemplate: rounds.filter(r => r.name.trim())
       }
-      const r = await fetch('/api/companies', {
-        method: 'POST',
+      const r = await fetch(`/api/companies/${id}`, {
+        method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
         body: JSON.stringify(payload)
       })
       const d = await r.json()
-      if (!r.ok) throw new Error(d.message || 'Failed to create company')
-      setSuccess('Company created successfully')
-      toast.success('Company Created', `${d.data.name} has been successfully created.`)
-      setTimeout(() => { window.location.href = `/company/${encodeURIComponent(d.data.name)}` }, 1000)
+      if (!r.ok) throw new Error(d.message || 'Failed to update company')
+      setSuccess('Company updated successfully')
+      toast.success('Company Updated', `${d.data.name} has been successfully updated.`)
+      setTimeout(() => navigate(`/company/${encodeURIComponent(d.data.name)}`), 1000)
     } catch (e) {
       setError(e.message)
-      toast.error('Creation Failed', e.message)
+      toast.error('Update Failed', e.message)
     } finally {
       setLoading(false)
     }
@@ -72,8 +95,15 @@ export default function CreateCompany() {
 
   return (
     <div className="container">
-      <Card title="Create Company" actions={
-        <Button onClick={submit} disabled={loading}>{loading ? 'Saving...' : 'Save'}</Button>
+      <Card title="Edit Company" actions={
+        <div style={{ display: 'flex', gap: '8px' }}>
+          <Button variant="secondary" onClick={() => navigate('/company')}>
+            Cancel
+          </Button>
+          <Button onClick={submit} disabled={loading}>
+            {loading ? 'Saving...' : 'Save Changes'}
+          </Button>
+        </div>
       }>
         <form onSubmit={submit}>
           <FormInput label="Name" value={name} onChange={e=>setName(e.target.value)} required />
@@ -104,11 +134,8 @@ export default function CreateCompany() {
 
           {error && <p style={{ color: 'red' }}>{error}</p>}
           {success && <p style={{ color: 'green' }}>{success}</p>}
-          <Button type="submit" disabled={loading}>{loading ? 'Saving...' : 'Create Company'}</Button>
         </form>
       </Card>
     </div>
   )
 }
-
-

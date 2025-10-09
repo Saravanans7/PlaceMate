@@ -6,6 +6,7 @@ import CompanyList from './pages/CompanyList.jsx'
 import CompanyDetail from './pages/CompanyDetail.jsx'
 import CreateRegistration from './pages/CreateRegistration.jsx'
 import CreateCompany from './pages/CreateCompany.jsx'
+import EditCompany from './pages/EditCompany.jsx'
 import DriveStaff from './pages/DriveStaff.jsx'
 import DriveStudent from './pages/DriveStudent.jsx'
 import Experiences from './pages/Experiences.jsx'
@@ -14,13 +15,17 @@ import RegisterCompany from './pages/RegisterCompany.jsx'
 import AddInterviewExperience from './pages/AddInterviewExperience.jsx'
 import ExperienceApproval from './pages/ExperienceApproval.jsx'
 import PlacedStudentExperience from './pages/PlacedStudentExperience.jsx'
+import Blacklist from './pages/Blacklist.jsx'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
+import { ToastProvider, useToast } from './context/ToastContext.jsx'
 import AuthGuard from './components/AuthGuard.jsx'
 import Navbar from './components/Navbar.jsx'
+import ToastContainer from './components/ToastContainer.jsx'
 
 function AppContent() {
   const location = useLocation()
   const { user } = useAuth()
+  const { toasts, removeToast } = useToast()
   
   // Hide navbar on home and login pages; show sidebar elsewhere
   const hideNavbarPages = ['/', '/login']
@@ -60,6 +65,7 @@ function AppContent() {
         <Route path="/dashboard" element={<AuthGuard><Dashboard /></AuthGuard>} />
         <Route path="/company" element={<AuthGuard><CompanyList /></AuthGuard>} />
         <Route path="/company/create" element={<AuthGuard><CreateCompany /></AuthGuard>} />
+        <Route path="/company/edit/:id" element={<AuthGuard><EditCompany /></AuthGuard>} />
         <Route path="/company/:companyName" element={<AuthGuard><CompanyDetail /></AuthGuard>} />
         <Route path="/company/create-registration" element={<AuthGuard><CreateRegistration /></AuthGuard>} />
         <Route path="/drive/:companyName" element={<AuthGuard><DriveStudent /></AuthGuard>} />
@@ -69,20 +75,24 @@ function AppContent() {
         <Route path="/company/:companyName/add-interview-experience" element={<AuthGuard><AddInterviewExperience /></AuthGuard>} />
         <Route path="/placed-student/experience" element={<AuthGuard><PlacedStudentExperience /></AuthGuard>} />
         <Route path="/staff/experience-approval" element={<AuthGuard><ExperienceApproval /></AuthGuard>} />
+        <Route path="/staff/blacklist" element={<AuthGuard><Blacklist /></AuthGuard>} />
         <Route path="/student/profile" element={<AuthGuard><Profile /></AuthGuard>} />
         <Route path="/company/:companyName/register" element={<AuthGuard><RegisterCompany /></AuthGuard>} />
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
       </div>
+      <ToastContainer toasts={toasts} onRemove={removeToast} />
     </div>
   )
 }
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </ToastProvider>
   )
 }
 
