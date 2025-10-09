@@ -271,6 +271,26 @@
     border-radius: var(--radius-sm);
 }
 
+/* Icon buttons */
+.icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    /* tighter padding for icon-only */
+    width: 32px;
+    height: 32px;
+}
+
+.icon-btn .icon {
+    width: 16px;
+    height: 16px;
+}
+
+.icon-btn.btn-secondary {
+    border-width: 2px;
+}
+
 .btn-danger {
     background: #ef4444;
     color: white;

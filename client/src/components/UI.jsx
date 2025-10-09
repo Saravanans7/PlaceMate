@@ -23,7 +23,7 @@ export function Table({ columns = [], rows = [] }) {
         <tbody>
           {rows.map((r, idx) => (
             <tr key={idx}>
-              {columns.map((c) => <td key={c.key || c.label}>{c.render ? c.render(r) : r[c.key]}</td>)}
+              {columns.map((c) => <td key={c.key || c.label}>{c.render ? c.render(r, idx) : r[c.key]}</td>)}
             </tr>
           ))}
         </tbody>

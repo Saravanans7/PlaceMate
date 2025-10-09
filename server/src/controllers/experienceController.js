@@ -1,5 +1,6 @@
 import InterviewExperience from '../models/InterviewExperience.js';
 import Company from '../models/Company.js';
+import User from '../models/User.js';
 
 export async function createExperience(req, res, next) {
   try {
@@ -9,6 +10,15 @@ export async function createExperience(req, res, next) {
     const company = await Company.findOne({ name: companyName });
     if (!company) {
       return res.status(404).json({ success: false, message: 'Company not found' });
+    }
+    
+    // Check if user is placed at this company
+    const user = await User.findById(req.user._id);
+    if (!user.isPlaced || user.placedCompany.toString() !== company._id.toString()) {
+      return res.status(403).json({ 
+        success: false, 
+        message: 'You can only write interview experiences for companies where you have been placed' 
+      });
     }
     
     const exp = await InterviewExperience.create({ 

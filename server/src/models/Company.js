@@ -17,6 +17,10 @@ const CompanySchema = new Schema({
   description: { type: String },
   lastYearPlaced: { type: Number, default: 0 },
   lastDriveDate: { type: Date },
+  // Placement stats
+  totalPlaced: { type: Number, default: 0 },
+  totalDrives: { type: Number, default: 0 },
+  avgPlacedPerDrive: { type: Number, default: 0 },
   createdBy: { type: Schema.Types.ObjectId, ref: 'User' },
   roundsTemplate: { type: [RoundTemplateSchema], default: [] },
   createdAt: { type: Date, default: Date.now },

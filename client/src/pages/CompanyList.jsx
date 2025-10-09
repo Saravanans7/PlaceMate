@@ -81,7 +81,7 @@ export default function CompanyList() {
           placeholder="Search by name" 
         />
         <Table columns={[
-          {label:'ID', render:r=>r.id},
+          {label:'#', render:(r, i)=>i+1},
           {label:'Company Name', render:r=>r.name},
           {label:'Salary (LPA)', render:r=>r.salary},
           {label:'Location', render:r=>r.location},
@@ -90,16 +90,47 @@ export default function CompanyList() {
           {label:'Last Drive', render:r=>r.lastDriveDate},
           {label:'Actions', render:r=> (
             <div className="action-buttons">
-              <a className="btn btn-secondary btn-sm" href={`/company/${encodeURIComponent(r.name)}`}>View</a>
+              <a
+                className="btn btn-secondary btn-sm icon-btn"
+                href={`/company/${encodeURIComponent(r.name)}`}
+                aria-label="View"
+                title="View"
+              >
+                {/* Eye icon */}
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon">
+                  <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </a>
               {isAdmin && (
                 <>
-                  <a className="btn btn-primary btn-sm" href={`/company/edit/${r.id}`}>Edit</a>
+                  <a
+                    className="btn btn-primary btn-sm icon-btn"
+                    href={`/company/edit/${r.id}`}
+                    aria-label="Edit"
+                    title="Edit"
+                  >
+                    {/* Pencil icon */}
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon">
+                      <path d="M12 20h9" />
+                      <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+                    </svg>
+                  </a>
                   <button
-                    className="btn btn-danger btn-sm"
+                    className="btn btn-danger btn-sm icon-btn"
                     onClick={() => deleteCompany(r.id, r.name)}
                     disabled={loading}
+                    aria-label="Delete"
+                    title="Delete"
                   >
-                    Delete
+                    {/* Trash icon */}
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="icon">
+                      <polyline points="3 6 5 6 21 6" />
+                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+                      <path d="M10 11v6" />
+                      <path d="M14 11v6" />
+                      <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2" />
+                    </svg>
                   </button>
                 </>
               )}

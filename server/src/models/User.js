@@ -29,6 +29,11 @@ const UserSchema = new Schema({
   resumes: { type: [ResumeSchema], default: [], validate: [arr => arr.length <= 3, 'Max 3 resumes'] },
   defaultResumeIndex: { type: Number, default: 0 },
   googleId: { type: String },
+  // Placement tracking
+  isPlaced: { type: Boolean, default: false },
+  placedAt: { type: Date },
+  placedCompany: { type: Schema.Types.ObjectId, ref: 'Company' },
+  placedCompanyName: { type: String },
   createdAt: { type: Date, default: Date.now },
 });
 

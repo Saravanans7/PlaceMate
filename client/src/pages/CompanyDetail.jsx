@@ -1,16 +1,18 @@
 import { useEffect, useState } from 'react'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, Link, useNavigate } from 'react-router-dom'
 import { Card, Button } from '../components/UI.jsx'
 import { useAuth } from '../context/AuthContext.jsx'
 
 export default function CompanyDetail() {
   const { companyName } = useParams()
+  const navigate = useNavigate()
   const [company, setCompany] = useState(null)
   const [registrations, setRegistrations] = useState([])
   const [registeredStudents, setRegisteredStudents] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const { user } = useAuth()
+  const [alreadyRegistered, setAlreadyRegistered] = useState(false)
 
   useEffect(() => {
     loadCompanyData()
@@ -52,6 +54,7 @@ export default function CompanyDetail() {
           for (const reg of regData.data || []) {
             console.log('Fetching students for registration:', reg._id)
             try {
+              // Applicants endpoint is mounted at /api/registrations/:id/applicants
               const studentsResponse = await fetch(`/api/registrations/${reg._id}/applicants`, { credentials: 'include' })
               const studentsData = await studentsResponse.json()
               
@@ -80,15 +83,50 @@ export default function CompanyDetail() {
           console.error('Failed to fetch registrations:', regData)
         }
       } else {
-        // For students, just set empty arrays to avoid unnecessary API calls
+        // For students, check if they have already registered for this company
         setRegistrations([])
         setRegisteredStudents([])
+        if (user?._id) {
+          try {
+            // Find open registrations for this company
+            const regResponse = await fetch(`/api/registrations?company=${foundCompany._id}&status=open`, { credentials: 'include' })
+            const regData = await regResponse.json()
+            if (regResponse.ok) {
+              const regs = regData.data || []
+              if (regs.length > 0) {
+                // Load user's applications and check if any match these registrations
+                const appsResponse = await fetch(`/api/users/${user._id}/applications`, { credentials: 'include' })
+                const appsData = await appsResponse.json()
+                if (appsResponse.ok) {
+                  const appRegIds = new Set((appsData.data || []).map(a => String(a.registration?._id || a.registration)))
+                  const hasApplied = regs.some(r => appRegIds.has(String(r._id)))
+                  setAlreadyRegistered(hasApplied)
+                }
+              }
+            }
+          } catch (e) {
+            console.error('Failed to check existing registration', e)
+          }
+        }
       }
     } catch (err) {
       console.error('Error loading company data:', err)
       setError(err.message || 'Failed to load company data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function manageRoundsForRegistration(registrationId) {
+    try {
+      const r = await fetch(`/api/drives/by-registration/${registrationId}`, { credentials: 'include' })
+      const d = await r.json()
+      if (!r.ok) {
+        throw new Error(d.message || 'Failed to open drive manager')
+      }
+      navigate(`/staff/drive/${d.data._id}`)
+    } catch (e) {
+      alert(e.message || 'Failed to open drive manager')
     }
   }
 
@@ -142,8 +180,11 @@ export default function CompanyDetail() {
           {user?.role === 'staff' && (
             <Link className="btn btn-primary" to={`/company/create-registration?companyId=${company._id}`}>Open Registration</Link>
           )}
-          {user?.role === 'student' && (
+          {user?.role === 'student' && !alreadyRegistered && (
             <Link className="btn btn-primary" to={`/company/${encodeURIComponent(company.name)}/register`}>Register</Link>
+          )}
+          {user?.role === 'student' && alreadyRegistered && (
+            <span className="btn btn-secondary" aria-disabled="true">Already Registered</span>
           )}
           {user?.role === 'student' && (
             <Link className="btn btn-primary" to={`/company/${encodeURIComponent(company.name)}/add-interview-experience`}>Add Interview Experience</Link>
@@ -155,6 +196,25 @@ export default function CompanyDetail() {
       {/* Only show registered students to staff/admin */}
       {user?.role === 'staff' && (
         <div>
+          <Card title={`Registrations (${registrations.length})`}>
+            {registrations.length === 0 ? (
+              <p>No registrations found for this company.</p>
+            ) : (
+              <div className="students-list">
+                {registrations.map((reg) => (
+                  <div key={reg._id} className="student-card">
+                    <div className="student-header">
+                      <h4>Drive: {new Date(reg.driveDate).toLocaleDateString()} • Batch {reg.batch}</h4>
+                      <span className={`status-badge ${reg.status}`}>{reg.status}</span>
+                    </div>
+                    <div className="registration-info">
+                      <Button onClick={() => manageRoundsForRegistration(reg._id)}>Manage Rounds</Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
           <Card title={`Registered Students (${registeredStudents.length})`} actions={
             <Button onClick={loadCompanyData} disabled={loading}>
               {loading ? 'Loading...' : 'Refresh'}

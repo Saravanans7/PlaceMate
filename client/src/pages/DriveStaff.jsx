@@ -31,6 +31,11 @@ export default function DriveStaff() {
       
       setDrive(d.data)
       
+      // Set current round index from database
+      if (d.data?.currentRoundIndex !== undefined) {
+        setCurrentRoundIndex(d.data.currentRoundIndex)
+      }
+      
       // Load applicants for this drive's registration
       if (d.data?.registration?._id) {
         console.log('Loading applicants for registration:', d.data.registration._id)
@@ -101,17 +106,17 @@ export default function DriveStaff() {
       const isLastRound = currentRoundIndex === (drive.rounds.length - 1)
       
       if (isLastRound) {
-        // This is the final round - mark students as placed
+        // This is the final round - mark students as placed and close the drive
         await fetch(`/api/drives/${id}/finalize`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({ 
             finalSelected: roundStudents, 
-            close: false 
+            close: true 
           })
         })
-        alert(`${roundStudents.length} students have been placed!`)
+        alert(`${roundStudents.length} students have been placed! Drive closed and stats updated.`)
       } else {
         // Move students to next round
         const results = roundStudents.map(studentId => ({
@@ -124,7 +129,10 @@ export default function DriveStaff() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ results })
+          body: JSON.stringify({ 
+            results,
+            nextRoundIndex: currentRoundIndex + 1
+          })
         })
 
         // Move to next round

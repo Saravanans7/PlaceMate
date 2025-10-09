@@ -35,6 +35,7 @@ const DriveSchema = new Schema({
   date: Date,
   announcements: { type: [AnnouncementSchema], default: [] },
   rounds: { type: [RoundSchema], default: [] },
+  currentRoundIndex: { type: Number, default: 0 },
   finalSelected: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   isClosed: { type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },

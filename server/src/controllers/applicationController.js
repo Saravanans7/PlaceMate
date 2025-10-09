@@ -21,14 +21,14 @@ export async function applyToRegistration(req, res, next) {
 
 export async function listMyApplications(req, res, next) {
   try {
-    const apps = await Application.find({ student: req.params.id }).populate('registration');
+    const apps = await Application.find({ student: req.params.id, status: 'registered' }).populate('registration');
     res.json({ success: true, data: apps });
   } catch (e) { next(e); }
 }
 
 export async function listApplicants(req, res, next) {
   try {
-    const apps = await Application.find({ registration: req.params.id }).populate('student');
+    const apps = await Application.find({ registration: req.params.id, status: 'registered' }).populate('student');
     res.json({ success: true, data: apps });
   } catch (e) { next(e); }
 }

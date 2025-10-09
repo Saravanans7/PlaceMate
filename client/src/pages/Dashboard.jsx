@@ -190,6 +190,37 @@ export default function Dashboard() {
             </div>
           </Card>
         )}
+        
+        {/* Placement Status Card */}
+        {user.role === 'student' && (
+          <Card title="Placement Status" actions={
+            <Button onClick={refreshPlacementStatus} disabled={isRefreshing}>
+              {isRefreshing ? 'Refreshing...' : '🔄 Refresh'}
+            </Button>
+          }>
+            {placementStatus?.student?.isPlaced ? (
+              <div className="success-card">
+                <div className="placement-info">
+                  <h3>🎉 Congratulations! You're Placed!</h3>
+                  <p><strong>Company:</strong> {placementStatus.student.placedCompanyName}</p>
+                  <p><strong>Placed on:</strong> {new Date(placementStatus.student.placedAt).toLocaleDateString()}</p>
+                </div>
+                <div className="placement-actions">
+                  <p>Share your interview experience to help other students!</p>
+                  <a className="btn btn-primary" href="/placed-student/experience">
+                    Write Interview Experience
+                  </a>
+                </div>
+              </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '20px', color: 'var(--text-secondary)' }}>
+                <p>You are not placed yet.</p>
+                <p>Keep applying and participating in drives!</p>
+              </div>
+            )}
+          </Card>
+        )}
+        
         <Card title="Upcoming companies">
           <div className="table-card">
             <Table columns={[{label:'Company', key:'company'},{label:'Drive Date', key:'date'}]}

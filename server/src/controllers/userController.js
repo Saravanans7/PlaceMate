@@ -48,6 +48,13 @@ export async function setDefaultResume(req, res, next) {
   } catch (e) { next(e); }
 }
 
+export async function getPlacementInfo(req, res, next) {
+  try {
+    const user = await User.findById(req.user._id).select('isPlaced placedAt placedCompany placedCompanyName').populate('placedCompany');
+    res.json({ success: true, data: user });
+  } catch (e) { next(e); }
+}
+
 function sanitize(user) {
   const u = user.toObject();
   delete u.passwordHash;

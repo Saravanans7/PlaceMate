@@ -1,5 +1,7 @@
 import Drive from '../models/Drive.js';
 import Registration from '../models/Registration.js';
+import Company from '../models/Company.js';
+import User from '../models/User.js';
 
 export async function listDrives(req, res, next) {
   try {
@@ -35,6 +37,18 @@ export async function getDrive(req, res, next) {
   } catch (e) { next(e); }
 }
 
+export async function getOrCreateDriveByRegistration(req, res, next) {
+  try {
+    const reg = await Registration.findById(req.params.id).populate('company');
+    if (!reg) return res.status(404).json({ success: false, message: 'Registration not found' });
+    let drive = await Drive.findOne({ registration: reg._id });
+    if (!drive) {
+      drive = await createDriveFromRegistration(reg);
+    }
+    res.json({ success: true, data: drive });
+  } catch (e) { next(e); }
+}
+
 export async function addAnnouncement(req, res, next) {
   try {
     const drive = await Drive.findById(req.params.id);
@@ -60,10 +74,16 @@ export async function shortlistRound(req, res, next) {
 export async function roundResults(req, res, next) {
   try {
     const { roundIndex } = req.params;
-    const { results } = req.body;
+    const { results, nextRoundIndex } = req.body;
     const drive = await Drive.findById(req.params.id);
     if (!drive) return res.status(404).json({ success: false, message: 'Not found' });
     drive.rounds[roundIndex].results = results;
+    
+    // Update current round index if provided
+    if (nextRoundIndex !== undefined) {
+      drive.currentRoundIndex = nextRoundIndex;
+    }
+    
     await drive.save();
     res.json({ success: true, data: drive });
   } catch (e) { next(e); }
@@ -72,10 +92,52 @@ export async function roundResults(req, res, next) {
 export async function finalizeDrive(req, res, next) {
   try {
     const { finalSelected, close } = req.body;
-    const drive = await Drive.findById(req.params.id).populate('company');
+    const drive = await Drive.findById(req.params.id).populate('company registration');
     if (!drive) return res.status(404).json({ success: false, message: 'Not found' });
     drive.finalSelected = finalSelected || [];
-    if (close) drive.isClosed = true;
+    if (close) {
+      drive.isClosed = true;
+      // Update registration status to completed
+      if (drive.registration) {
+        await Registration.updateOne({ _id: drive.registration._id || drive.registration }, { $set: { status: 'completed' } });
+      }
+      
+      // Mark selected students as placed
+      if (drive.finalSelected && drive.finalSelected.length > 0) {
+        const companyId = drive.company._id || drive.company;
+        const company = await Company.findById(companyId);
+        const companyName = company?.name || drive.registration?.companyNameCached || 'Unknown Company';
+        
+        await User.updateMany(
+          { _id: { $in: drive.finalSelected } },
+          { 
+            $set: { 
+              isPlaced: true,
+              placedAt: new Date(),
+              placedCompany: companyId,
+              placedCompanyName: companyName
+            }
+          }
+        );
+      }
+      
+      // Update company placement stats
+      if (drive.company) {
+        const placedCount = Array.isArray(drive.finalSelected) ? drive.finalSelected.length : 0;
+        const companyId = drive.company._id || drive.company;
+        const company = await Company.findById(companyId);
+        if (company) {
+          const nextTotalDrives = (company.totalDrives || 0) + 1;
+          const nextTotalPlaced = (company.totalPlaced || 0) + placedCount;
+          const nextAvg = nextTotalDrives > 0 ? nextTotalPlaced / nextTotalDrives : 0;
+          company.totalDrives = nextTotalDrives;
+          company.totalPlaced = nextTotalPlaced;
+          company.avgPlacedPerDrive = Number(nextAvg.toFixed(2));
+          company.lastDriveDate = new Date();
+          await company.save();
+        }
+      }
+    }
     await drive.save();
     res.json({ success: true, data: drive });
   } catch (e) { next(e); }

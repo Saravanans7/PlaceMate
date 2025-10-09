@@ -13,7 +13,6 @@ export async function createRegistration(req, res, next) {
       companyNameCached: company.name,
       createdBy: req.user._id,
     });
-    // Email eligible students now
     const eligibleEmails = await findEligibleStudentEmails(reg);
     await sendRegistrationOpenEmail(reg, eligibleEmails);
     res.status(201).json({ success: true, data: reg, recipients: eligibleEmails.length });
@@ -22,10 +21,11 @@ export async function createRegistration(req, res, next) {
 
 export async function listRegistrations(req, res, next) {
   try {
-    const { batch, status, range } = req.query;
+    const { batch, status, range, company } = req.query;
     const q = {};
     if (batch) q.batch = Number(batch);
     if (status) q.status = status;
+    if (company) q.company = company;
     if (range === 'next30') {
       const now = new Date();
       const end = new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000);
