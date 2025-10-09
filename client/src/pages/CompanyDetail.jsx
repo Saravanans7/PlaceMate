@@ -186,6 +186,9 @@ export default function CompanyDetail() {
           {user?.role === 'student' && alreadyRegistered && (
             <span className="btn btn-secondary" aria-disabled="true">Already Registered</span>
           )}
+          {user?.role === 'student' && alreadyRegistered && (
+            <Link className="btn btn-primary" to={`/drive/${encodeURIComponent(company.name)}`}>View Drive</Link>
+          )}
           {user?.role === 'student' && (
             <Link className="btn btn-primary" to={`/company/${encodeURIComponent(company.name)}/add-interview-experience`}>Add Interview Experience</Link>
           )}
