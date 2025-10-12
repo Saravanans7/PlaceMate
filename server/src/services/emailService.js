@@ -169,7 +169,21 @@ export async function sendDriveCreatedEmail(drive, registration) {
 export async function getAllStudentEmails() {
   try {
     const students = await User.find({ role: 'student' }, 'email');
-    return students.map(student => student.email).filter(email => email);
+    const studentIds = students.map(student => student._id);
+
+    // Get blacklisted student IDs
+    const Blacklist = (await import('../models/Blacklist.js')).default;
+    const blacklistedIds = await Blacklist.find({
+      student: { $in: studentIds },
+      isActive: true
+    }).distinct('student');
+
+    // Filter out blacklisted students
+    const filteredStudents = students.filter(student =>
+      !blacklistedIds.some(id => id.toString() === student._id.toString())
+    );
+
+    return filteredStudents.map(student => student.email).filter(email => email);
   } catch (error) {
     console.error('Error fetching student emails:', error);
     return [];

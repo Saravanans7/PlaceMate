@@ -54,8 +54,12 @@ export async function addToBlacklist(req, res, next) {
       reason: reason.trim(),
       addedBy: req.user._id
     });
-    
-    await blacklistEntry.populate('student addedBy', 'name email');
+
+    // Populate all related data
+    await blacklistEntry.populate([
+      { path: 'student', select: 'name email rollNumber' },
+      { path: 'addedBy', select: 'name email' }
+    ]);
     
     res.status(201).json({ 
       success: true, 
@@ -95,13 +99,19 @@ export async function removeFromBlacklist(req, res, next) {
       });
     }
     
+    // Populate all related data before updating
+    await blacklistEntry.populate([
+      { path: 'student', select: 'name email rollNumber' },
+      { path: 'addedBy', select: 'name email' }
+    ]);
+
     blacklistEntry.isActive = false;
     blacklistEntry.removedBy = req.user._id;
     blacklistEntry.removedAt = new Date();
     blacklistEntry.removedReason = reason.trim();
-    
-    await blacklistEntry.save();
-    await blacklistEntry.populate('student addedBy removedBy', 'name email');
+
+    await blacklistEntry.save(); // Save the updated document
+    await blacklistEntry.populate('removedBy', 'name email'); // Populate after save
     
     res.json({ 
       success: true, 
@@ -127,7 +137,7 @@ export async function getBlacklistedStudents(req, res, next) {
       .sort({ addedAt: -1 })
       .skip((page - 1) * limit)
       .limit(Number(limit));
-    
+
     const total = await Blacklist.countDocuments(query);
     
     res.json({ 

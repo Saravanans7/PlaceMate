@@ -28,7 +28,7 @@ export default function Blacklist() {
   async function loadBlacklistedStudents() {
     setLoading(true)
     try {
-      const response = await fetch('/api/blacklist', { credentials: 'include' })
+      const response = await fetch('/api/blacklist?active=true', { credentials: 'include' })
       const data = await response.json()
       if (response.ok) {
         setBlacklistedStudents(data.data || [])
@@ -132,15 +132,17 @@ export default function Blacklist() {
       })
 
       const data = await response.json()
+
       if (response.ok) {
         toast.success(
           'Student Removed',
-          `${selectedBlacklistEntry.student.name} removed from blacklist.`
+          `${selectedBlacklistEntry?.studentName || 'Student'} removed from blacklist.`
         )
         setShowRemoveModal(false)
         setSelectedBlacklistEntry(null)
         setRemoveReason('')
-        loadBlacklistedStudents()
+        // Small delay to ensure database update is complete
+        setTimeout(() => loadBlacklistedStudents(), 500)
       } else {
         toast.error('Remove Failed', data.message || 'Failed to remove student')
       }
@@ -385,9 +387,9 @@ export default function Blacklist() {
                 borderRadius: '4px'
               }}
             >
-              <p><strong>Student:</strong> {selectedBlacklistEntry.student?.name}</p>
+              <p><strong>Student:</strong> {selectedBlacklistEntry.studentName}</p>
               <p><strong>Original Reason:</strong> {selectedBlacklistEntry.reason}</p>
-              <p><strong>Blacklisted On:</strong> {new Date(selectedBlacklistEntry.addedAt).toLocaleDateString()}</p>
+              <p><strong>Blacklisted On:</strong> {new Date(selectedBlacklistEntry.addedDate).toLocaleDateString()}</p>
             </div>
 
             <FormInput

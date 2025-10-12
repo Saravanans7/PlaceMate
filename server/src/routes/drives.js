@@ -1,6 +1,6 @@
 import express from 'express';
 import { authMiddleware, roleMiddleware } from '../middleware/auth.js';
-import { listDrives, createDrive, getDrive, getDriveWithStudentProgress, addAnnouncement, shortlistRound, roundResults, finalizeDrive, backfillTodayDrives, getOrCreateDriveByRegistration } from '../controllers/driveController.js';
+import { listDrives, createDrive, getDrive, getDriveWithStudentProgress, addAnnouncement, shortlistRound, roundResults, finalizeDrive, backfillTodayDrives, getOrCreateDriveByRegistration, updateDrive, deleteDrive } from '../controllers/driveController.js';
 
 const router = express.Router();
 
@@ -14,6 +14,8 @@ router.post('/:id/announcement', authMiddleware, roleMiddleware('staff'), addAnn
 router.post('/:id/rounds/:roundIndex/shortlist', authMiddleware, roleMiddleware('staff'), shortlistRound);
 router.post('/:id/rounds/:roundIndex/results', authMiddleware, roleMiddleware('staff'), roundResults);
 router.post('/:id/finalize', authMiddleware, roleMiddleware('staff'), finalizeDrive);
+router.put('/:id', authMiddleware, roleMiddleware('staff'), updateDrive);
+router.delete('/:id', authMiddleware, roleMiddleware('staff'), deleteDrive);
 
 export default router;
 
