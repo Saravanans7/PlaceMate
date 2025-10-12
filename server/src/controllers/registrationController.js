@@ -55,9 +55,16 @@ export async function updateRegistration(req, res, next) {
 
 export async function deleteRegistration(req, res, next) {
   try {
-    const reg = await Registration.findByIdAndDelete(req.params.id);
-    if (!reg) return res.status(404).json({ success: false, message: 'Not found' });
-    res.json({ success: true });
+    const reg = await Registration.findById(req.params.id);
+    if (!reg) return res.status(404).json({ success: false, message: 'Registration not found' });
+
+    // Delete associated applications first
+    const Application = (await import('../models/Application.js')).default;
+    await Application.deleteMany({ registration: reg._id });
+
+    // Delete the registration
+    await Registration.findByIdAndDelete(req.params.id);
+    res.json({ success: true, message: 'Registration and associated applications deleted successfully' });
   } catch (e) { next(e); }
 }
 

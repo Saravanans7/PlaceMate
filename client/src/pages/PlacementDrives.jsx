@@ -5,36 +5,161 @@ import { useToast } from '../context/ToastContext.jsx'
 
 export default function PlacementDrives() {
   const [drives, setDrives] = useState([])
+  const [registrations, setRegistrations] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  const [filter, setFilter] = useState('all') // 'all', 'forthcoming', 'ongoing', 'past'
+  const [viewType, setViewType] = useState('all') // 'all', 'registrations', 'drives'
   const [editingDrive, setEditingDrive] = useState(null)
+  const [editingRegistration, setEditingRegistration] = useState(null)
   const [editForm, setEditForm] = useState({
     date: '',
     announcements: [],
     rounds: []
   })
+  const [editRegistrationForm, setEditRegistrationForm] = useState({
+    driveDate: '',
+    batch: '',
+    eligibility: {
+      minCgpa: '',
+      maxArrears: '',
+      maxHistoryArrears: '',
+      minTenthPercent: '',
+      minTwelfthPercent: '',
+      acceptedBatches: []
+    }
+  })
   const navigate = useNavigate()
   const { addToast } = useToast()
 
-  useEffect(() => { loadDrives() }, [])
+  useEffect(() => { loadData() }, [])
 
-  async function loadDrives() {
+  async function loadData() {
     setLoading(true)
     setError(null)
     try {
-      const r = await fetch('/api/drives', { credentials: 'include' })
-      const d = await r.json()
+      // Fetch both drives and registrations in parallel
+      const [drivesRes, registrationsRes] = await Promise.all([
+        fetch('/api/drives', { credentials: 'include' }),
+        fetch('/api/registrations?status=open', { credentials: 'include' })
+      ])
 
-      if (!r.ok) {
-        throw new Error(d.message || 'Failed to load drives')
+      const [drivesData, registrationsData] = await Promise.all([
+        drivesRes.json(),
+        registrationsRes.json()
+      ])
+
+      if (!drivesRes.ok || !registrationsRes.ok) {
+        throw new Error('Failed to load data')
       }
 
-      setDrives(d.data || [])
+      setDrives(drivesData.data || [])
+      setRegistrations(registrationsData.data || [])
     } catch (err) {
-      console.error('Error loading drives:', err)
-      setError(err.message || 'Failed to load drives')
+      console.error('Error loading data:', err)
+      setError(err.message || 'Failed to load placement data')
     } finally {
       setLoading(false)
+    }
+  }
+
+  // Get items by view type for counting
+  function getItemsByViewType(viewTypeFilter = viewType) {
+    switch (viewTypeFilter) {
+      case 'registrations':
+        return registrations.map(reg => ({
+          id: reg._id,
+          type: 'registration',
+          date: reg.driveDate,
+          isUpcoming: new Date(reg.driveDate) > new Date(),
+          isOngoing: new Date(reg.driveDate).toDateString() === new Date().toDateString(),
+          isPast: new Date(reg.driveDate) < new Date()
+        }))
+      case 'drives':
+        return drives.map(drive => ({
+          id: drive._id,
+          type: 'drive',
+          date: drive.date,
+          isUpcoming: false,
+          isOngoing: !drive.isClosed,
+          isPast: drive.isClosed
+        }))
+      default:
+        return [
+          ...registrations.map(reg => ({
+            id: reg._id,
+            type: 'registration',
+            date: reg.driveDate,
+            isUpcoming: new Date(reg.driveDate) > new Date(),
+            isOngoing: new Date(reg.driveDate).toDateString() === new Date().toDateString(),
+            isPast: new Date(reg.driveDate) < new Date()
+          })),
+          ...drives.map(drive => ({
+            id: drive._id,
+            type: 'drive',
+            date: drive.date,
+            isUpcoming: false,
+            isOngoing: !drive.isClosed,
+            isPast: drive.isClosed
+          }))
+        ]
+    }
+  }
+
+  // Filter and combine drives and registrations
+  function getFilteredItems() {
+    const now = new Date()
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+
+    // Convert registrations to a common format
+    const registrationItems = registrations.map(reg => ({
+      id: reg._id,
+      type: 'registration',
+      companyName: reg.companyNameCached || reg.company?.name || 'Unknown Company',
+      date: reg.driveDate,
+      status: 'registration',
+      data: reg,
+      isUpcoming: new Date(reg.driveDate) > today,
+      isOngoing: new Date(reg.driveDate).toDateString() === today.toDateString(),
+      isPast: new Date(reg.driveDate) < today
+    }))
+
+    // Convert drives to a common format
+    const driveItems = drives.map(drive => ({
+      id: drive._id,
+      type: 'drive',
+      companyName: drive.company?.name || drive.registration?.companyNameCached || 'Unknown Company',
+      date: drive.date,
+      status: drive.isClosed ? 'completed' : 'ongoing',
+      data: drive,
+      isUpcoming: false, // Drives are always current or past
+      isOngoing: !drive.isClosed,
+      isPast: drive.isClosed
+    }))
+
+    // Filter by view type first
+    let itemsToFilter = []
+    switch (viewType) {
+      case 'registrations':
+        itemsToFilter = registrationItems
+        break
+      case 'drives':
+        itemsToFilter = driveItems
+        break
+      default:
+        itemsToFilter = [...registrationItems, ...driveItems]
+    }
+
+    // Then apply time filter
+    switch (filter) {
+      case 'forthcoming':
+        return itemsToFilter.filter(item => item.isUpcoming)
+      case 'ongoing':
+        return itemsToFilter.filter(item => item.isOngoing)
+      case 'past':
+        return itemsToFilter.filter(item => item.isPast)
+      default:
+        return itemsToFilter
     }
   }
 
@@ -47,9 +172,38 @@ export default function PlacementDrives() {
     })
   }
 
+  function startEditingRegistration(registration) {
+    setEditingRegistration(registration._id)
+    setEditRegistrationForm({
+      driveDate: registration.driveDate ? new Date(registration.driveDate).toISOString().split('T')[0] : '',
+      batch: registration.batch || '',
+      eligibility: {
+        minCgpa: registration.eligibility?.minCgpa || '',
+        maxArrears: registration.eligibility?.maxArrears || '',
+        maxHistoryArrears: registration.eligibility?.maxHistoryArrears || '',
+        minTenthPercent: registration.eligibility?.minTenthPercent || '',
+        minTwelfthPercent: registration.eligibility?.minTwelfthPercent || '',
+        acceptedBatches: registration.eligibility?.acceptedBatches || []
+      }
+    })
+  }
+
   function cancelEditing() {
     setEditingDrive(null)
+    setEditingRegistration(null)
     setEditForm({ date: '', announcements: [], rounds: [] })
+    setEditRegistrationForm({
+      driveDate: '',
+      batch: '',
+      eligibility: {
+        minCgpa: '',
+        maxArrears: '',
+        maxHistoryArrears: '',
+        minTenthPercent: '',
+        minTwelfthPercent: '',
+        acceptedBatches: []
+      }
+    })
   }
 
   async function saveDrive() {
@@ -73,10 +227,45 @@ export default function PlacementDrives() {
 
       addToast('Drive updated successfully', 'success')
       setEditingDrive(null)
-      loadDrives()
+      loadData()
     } catch (err) {
       console.error('Error updating drive:', err)
       addToast(err.message || 'Failed to update drive', 'error')
+    }
+  }
+
+  async function saveRegistration() {
+    try {
+      const response = await fetch(`/api/registrations/${editingRegistration}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          driveDate: editRegistrationForm.driveDate ? new Date(editRegistrationForm.driveDate).toISOString() : undefined,
+          batch: editRegistrationForm.batch,
+          eligibility: {
+            minCgpa: editRegistrationForm.eligibility.minCgpa || undefined,
+            maxArrears: editRegistrationForm.eligibility.maxArrears || undefined,
+            maxHistoryArrears: editRegistrationForm.eligibility.maxHistoryArrears || undefined,
+            minTenthPercent: editRegistrationForm.eligibility.minTenthPercent || undefined,
+            minTwelfthPercent: editRegistrationForm.eligibility.minTwelfthPercent || undefined,
+            acceptedBatches: editRegistrationForm.eligibility.acceptedBatches
+          }
+        })
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to update registration')
+      }
+
+      addToast('Registration updated successfully', 'success')
+      setEditingRegistration(null)
+      loadData()
+    } catch (err) {
+      console.error('Error updating registration:', err)
+      addToast(err.message || 'Failed to update registration', 'error')
     }
   }
 
@@ -98,15 +287,87 @@ export default function PlacementDrives() {
       }
 
       addToast('Drive deleted successfully', 'success')
-      loadDrives()
+      loadData()
     } catch (err) {
       console.error('Error deleting drive:', err)
       addToast(err.message || 'Failed to delete drive', 'error')
     }
   }
 
+  async function deleteRegistration(registrationId) {
+    if (!confirm('Are you sure you want to delete this registration? This will also delete all associated applications and cannot be undone.')) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/registrations/${registrationId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Failed to delete registration')
+      }
+
+      addToast('Registration deleted successfully', 'success')
+      loadData()
+    } catch (err) {
+      console.error('Error deleting registration:', err)
+      addToast(err.message || 'Failed to delete registration', 'error')
+    }
+  }
+
   function updateEditForm(field, value) {
     setEditForm(prev => ({ ...prev, [field]: value }))
+  }
+
+  function updateEditRegistrationForm(field, value) {
+    if (field.startsWith('eligibility.')) {
+      const eligibilityField = field.split('.')[1]
+      setEditRegistrationForm(prev => ({
+        ...prev,
+        eligibility: {
+          ...prev.eligibility,
+          [eligibilityField]: value
+        }
+      }))
+    } else {
+      setEditRegistrationForm(prev => ({ ...prev, [field]: value }))
+    }
+  }
+
+  function addAcceptedBatch() {
+    setEditRegistrationForm(prev => ({
+      ...prev,
+      eligibility: {
+        ...prev.eligibility,
+        acceptedBatches: [...(prev.eligibility.acceptedBatches || []), '']
+      }
+    }))
+  }
+
+  function updateAcceptedBatch(index, value) {
+    setEditRegistrationForm(prev => ({
+      ...prev,
+      eligibility: {
+        ...prev.eligibility,
+        acceptedBatches: prev.eligibility.acceptedBatches.map((batch, i) =>
+          i === index ? value : batch
+        )
+      }
+    }))
+  }
+
+  function removeAcceptedBatch(index) {
+    setEditRegistrationForm(prev => ({
+      ...prev,
+      eligibility: {
+        ...prev.eligibility,
+        acceptedBatches: prev.eligibility.acceptedBatches.filter((_, i) => i !== index)
+      }
+    }))
   }
 
   function addRound() {
@@ -147,73 +408,184 @@ export default function PlacementDrives() {
       <div className="container">
         <Card title="Error">
           <p>Error: {error}</p>
-          <Button onClick={loadDrives}>Try Again</Button>
+          <Button onClick={loadData}>Try Again</Button>
         </Card>
       </div>
     )
   }
 
+  const filteredItems = getFilteredItems()
+
   return (
     <div className="container">
       <div className="page-header">
-        <h1>Placement Drives Management</h1>
-        <p>View and manage all placement drives</p>
+        <h1>Placement Management</h1>
+        <p>View and manage all placement registrations and drives</p>
+        <div className="view-indicator">
+          Currently viewing: <strong>{viewType === 'all' ? 'All Items' : viewType === 'registrations' ? 'Registrations Only' : 'Drives Only'}</strong>
+        </div>
       </div>
 
-      {drives.length === 0 ? (
-        <Card title="No Drives Found">
-          <p>No placement drives have been created yet.</p>
+      {/* View Type Selector */}
+      <Card className="view-type-selector">
+        <div className="filter-buttons">
+          <Button
+            variant={viewType === 'all' ? 'primary' : 'secondary'}
+            onClick={() => setViewType('all')}
+          >
+            All Items ({registrations.length + drives.length})
+          </Button>
+          <Button
+            variant={viewType === 'registrations' ? 'primary' : 'secondary'}
+            onClick={() => setViewType('registrations')}
+          >
+            Registrations ({registrations.length})
+          </Button>
+          <Button
+            variant={viewType === 'drives' ? 'primary' : 'secondary'}
+            onClick={() => setViewType('drives')}
+          >
+            Drives ({drives.length})
+          </Button>
+        </div>
+      </Card>
+
+      {/* Filter Buttons */}
+      <Card>
+        <div className="filter-buttons">
+          <Button
+            variant={filter === 'all' ? 'primary' : 'secondary'}
+            onClick={() => setFilter('all')}
+          >
+            All Time
+          </Button>
+          <Button
+            variant={filter === 'forthcoming' ? 'primary' : 'secondary'}
+            onClick={() => setFilter('forthcoming')}
+          >
+            Forthcoming ({getItemsByViewType().filter(item => item.isUpcoming).length})
+          </Button>
+          <Button
+            variant={filter === 'ongoing' ? 'primary' : 'secondary'}
+            onClick={() => setFilter('ongoing')}
+          >
+            Ongoing ({getItemsByViewType().filter(item => item.isOngoing).length})
+          </Button>
+          <Button
+            variant={filter === 'past' ? 'primary' : 'secondary'}
+            onClick={() => setFilter('past')}
+          >
+            Past ({getItemsByViewType().filter(item => item.isPast).length})
+          </Button>
+        </div>
+      </Card>
+
+      {filteredItems.length === 0 ? (
+        <Card title="No Items Found">
+          <p>No {filter !== 'all' ? filter : ''} {viewType !== 'all' ? viewType : 'placement'} items found.</p>
+          {(filter !== 'all' || viewType !== 'all') && (
+            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+              {filter !== 'all' && <Button onClick={() => setFilter('all')}>Show All Time</Button>}
+              {viewType !== 'all' && <Button onClick={() => setViewType('all')}>Show All Types</Button>}
+            </div>
+          )}
         </Card>
       ) : (
         <div className="drives-list">
-          {drives.map(drive => (
+          {filteredItems.map(item => (
             <Card
-              key={drive._id}
-              title={`${drive.company?.name || drive.registration?.companyNameCached || 'Unknown Company'} - ${new Date(drive.date).toLocaleDateString()}`}
+              key={`${item.type}-${item.id}`}
+              title={`${item.companyName} - ${new Date(item.date).toLocaleDateString()}`}
               actions={
                 <div className="drive-actions">
-                  <Button
-                    onClick={() => navigate(`/staff/drive/${drive._id}`)}
-                    variant="primary"
-                  >
-                    Manage Drive
-                  </Button>
-                  {!drive.isClosed && editingDrive !== drive._id && (
-                    <Button
-                      onClick={() => startEditing(drive)}
-                      variant="secondary"
-                    >
-                      Edit
-                    </Button>
-                  )}
-                  {!drive.isClosed && !drive.rounds.some(r => r.results && r.results.length > 0) && (
-                    <Button
-                      onClick={() => deleteDrive(drive._id)}
-                      variant="danger"
-                    >
-                      Delete
-                    </Button>
+                  {item.type === 'drive' ? (
+                    <>
+                      <Button
+                        onClick={() => navigate(`/staff/drive/${item.id}`)}
+                        variant="primary"
+                      >
+                        Manage Drive
+                      </Button>
+                      {!item.data.isClosed && editingDrive !== item.id && (
+                        <Button
+                          onClick={() => startEditing(item.data)}
+                          variant="secondary"
+                        >
+                          Edit
+                        </Button>
+                      )}
+                      {!item.data.isClosed && !item.data.rounds.some(r => r.results && r.results.length > 0) && (
+                        <Button
+                          onClick={() => deleteDrive(item.id)}
+                          variant="danger"
+                        >
+                          Delete
+                        </Button>
+                      )}
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        onClick={() => navigate(`/company/${item.data.companyNameCached || item.data.company?._id || item.data.company}/register`)}
+                        variant="primary"
+                      >
+                        View Registration
+                      </Button>
+                      {editingRegistration !== item.id && (
+                        <Button
+                          onClick={() => startEditingRegistration(item.data)}
+                          variant="secondary"
+                        >
+                          Edit
+                        </Button>
+                      )}
+                      <Button
+                        onClick={() => deleteRegistration(item.id)}
+                        variant="danger"
+                      >
+                        Delete
+                      </Button>
+                      <span className="item-type-badge registration">Registration Open</span>
+                    </>
                   )}
                 </div>
               }
             >
               <div className="drive-summary">
                 <div className="drive-info">
-                  <p><strong>Company:</strong> {drive.company?.name || drive.registration?.companyNameCached}</p>
-                  <p><strong>Drive Date:</strong> {new Date(drive.date).toLocaleDateString()}</p>
-                  <p><strong>Status:</strong>
-                    <span className={`status-${drive.isClosed ? 'closed' : 'active'}`}>
-                      {drive.isClosed ? 'Closed' : 'Active'}
+                  <p><strong>Company:</strong> {item.companyName}</p>
+                  <p><strong>Date:</strong> {new Date(item.date).toLocaleDateString()}</p>
+                  <p><strong>Type:</strong>
+                    <span className={`item-type ${item.type}`}>
+                      {item.type === 'registration' ? 'Registration' : 'Drive'}
                     </span>
                   </p>
-                  <p><strong>Rounds:</strong> {drive.rounds?.length || 0}</p>
-                  <p><strong>Current Round:</strong> {drive.currentRoundIndex + 1} of {drive.rounds?.length || 0}</p>
-                  {drive.finalSelected && drive.finalSelected.length > 0 && (
-                    <p><strong>Placed Students:</strong> {drive.finalSelected.length}</p>
+                  <p><strong>Status:</strong>
+                    <span className={`status-${item.status === 'registration' ? 'open' : item.status}`}>
+                      {item.type === 'registration'
+                        ? 'Registration Open'
+                        : item.status === 'ongoing' ? 'Active' : 'Completed'
+                      }
+                    </span>
+                  </p>
+                  {item.type === 'drive' && (
+                    <>
+                      <p><strong>Rounds:</strong> {item.data.rounds?.length || 0}</p>
+                      <p><strong>Current Round:</strong> {item.data.currentRoundIndex + 1} of {item.data.rounds?.length || 0}</p>
+                      {item.data.finalSelected && item.data.finalSelected.length > 0 && (
+                        <p><strong>Placed Students:</strong> {item.data.finalSelected.length}</p>
+                      )}
+                    </>
+                  )}
+                  {item.type === 'registration' && (
+                    <>
+                      <p><strong>Batch:</strong> {item.data.batch}</p>
+                      <p><strong>Eligibility:</strong> Min CGPA {item.data.eligibility?.minCgpa || 'N/A'}</p>
+                    </>
                   )}
                 </div>
 
-                {editingDrive === drive._id && (
+                {editingDrive === item.id && item.type === 'drive' && (
                   <div className="drive-edit-form">
                     <h3>Edit Drive</h3>
 
@@ -263,6 +635,137 @@ export default function PlacementDrives() {
 
                     <div className="edit-actions">
                       <Button onClick={saveDrive} variant="success">
+                        Save Changes
+                      </Button>
+                      <Button onClick={cancelEditing} variant="secondary">
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {editingRegistration === item.id && item.type === 'registration' && (
+                  <div className="drive-edit-form">
+                    <h3>Edit Registration</h3>
+
+                    <div className="form-row">
+                      <div className="form-group">
+                        <label>Drive Date:</label>
+                        <input
+                          type="date"
+                          value={editRegistrationForm.driveDate}
+                          onChange={e => updateEditRegistrationForm('driveDate', e.target.value)}
+                          className="form-input"
+                        />
+                      </div>
+
+                      <div className="form-group">
+                        <label>Batch:</label>
+                        <input
+                          type="number"
+                          value={editRegistrationForm.batch}
+                          onChange={e => updateEditRegistrationForm('batch', e.target.value)}
+                          className="form-input"
+                          placeholder="e.g., 2025"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="form-group">
+                      <h4>Eligibility Criteria:</h4>
+
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Min CGPA:</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={editRegistrationForm.eligibility.minCgpa}
+                            onChange={e => updateEditRegistrationForm('eligibility.minCgpa', e.target.value)}
+                            className="form-input"
+                            placeholder="e.g., 7.0"
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Max Arrears:</label>
+                          <input
+                            type="number"
+                            value={editRegistrationForm.eligibility.maxArrears}
+                            onChange={e => updateEditRegistrationForm('eligibility.maxArrears', e.target.value)}
+                            className="form-input"
+                            placeholder="e.g., 2"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Max History Arrears:</label>
+                          <input
+                            type="number"
+                            value={editRegistrationForm.eligibility.maxHistoryArrears}
+                            onChange={e => updateEditRegistrationForm('eligibility.maxHistoryArrears', e.target.value)}
+                            className="form-input"
+                            placeholder="e.g., 4"
+                          />
+                        </div>
+
+                        <div className="form-group">
+                          <label>Min 10th %:</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={editRegistrationForm.eligibility.minTenthPercent}
+                            onChange={e => updateEditRegistrationForm('eligibility.minTenthPercent', e.target.value)}
+                            className="form-input"
+                            placeholder="e.g., 60.0"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-row">
+                        <div className="form-group">
+                          <label>Min 12th %:</label>
+                          <input
+                            type="number"
+                            step="0.1"
+                            value={editRegistrationForm.eligibility.minTwelfthPercent}
+                            onChange={e => updateEditRegistrationForm('eligibility.minTwelfthPercent', e.target.value)}
+                            className="form-input"
+                            placeholder="e.g., 65.0"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="form-group">
+                        <label>Accepted Batches:</label>
+                        {editRegistrationForm.eligibility.acceptedBatches?.map((batch, index) => (
+                          <div key={index} className="batch-input-row">
+                            <input
+                              type="number"
+                              value={batch}
+                              onChange={e => updateAcceptedBatch(index, e.target.value)}
+                              className="form-input"
+                              placeholder="e.g., 2025"
+                            />
+                            <Button
+                              onClick={() => removeAcceptedBatch(index)}
+                              variant="danger"
+                              size="small"
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        ))}
+                        <Button onClick={addAcceptedBatch} variant="secondary" size="small">
+                          Add Batch
+                        </Button>
+                      </div>
+                    </div>
+
+                    <div className="edit-actions">
+                      <Button onClick={saveRegistration} variant="success">
                         Save Changes
                       </Button>
                       <Button onClick={cancelEditing} variant="secondary">
