@@ -49,7 +49,7 @@ export default function Login() {
     setDemoLoading(role)
     try {
       if (role === 'student') {
-        await login('studentdemo@gmail.com', 'lol')
+        await login('saravanan.cb22@bitsathy.ac.in', 'lol')
       } else {
         await login('staffdemo@gmail.com', 'lol')
       }
@@ -124,13 +124,7 @@ export default function Login() {
             </form>
           </div>
 
-          <button
-            type="button"
-            className="login-btn login-btn-ghost login-btn-block login-google"
-            onClick={google}
-          >
-            <span className="google-icon" /> Continue with Google
-          </button>
+          
 
           <div className="login-demo-box">
             <p className="login-demo-title">Here is the project demo:</p>
