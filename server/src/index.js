@@ -23,6 +23,7 @@ import blacklistRoutes from './routes/blacklist.js';
 import { scheduleCronJobs } from './lib/cron.js';
 import Registration from './models/Registration.js';
 import Drive from './models/Drive.js';
+import chatbotRoutes from './routes/chatbotRoutes.js';
 import { createDriveFromRegistration } from './controllers/driveController.js';
 
 const app = express();
@@ -77,6 +78,7 @@ app.use('/api/experiences', experienceRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/stats', statsRoutes);
 app.use('/api/blacklist', blacklistRoutes);
+app.use('/api/v1/chatbot', chatbotRoutes);
 
 // Errors
 app.use(notFound);
@@ -89,9 +91,14 @@ connectDB()
     // On startup, backfill today's drives if missing (non-blocking)
     (async () => {
       try {
-        const start = new Date(); start.setHours(0,0,0,0);
-        const end = new Date(); end.setHours(23,59,59,999);
-        const regs = await Registration.find({ driveDate: { $gte: start, $lte: end }, status: 'open' }).populate('company');
+        const start = new Date();
+        start.setHours(0, 0, 0, 0);
+        const end = new Date();
+        end.setHours(23, 59, 59, 999);
+        const regs = await Registration.find({
+          driveDate: { $gte: start, $lte: end },
+          status: 'open',
+        }).populate('company');
         for (const reg of regs) {
           const exists = await Drive.findOne({ registration: reg._id });
           if (!exists) await createDriveFromRegistration(reg);
@@ -105,5 +112,3 @@ connectDB()
     console.error('Failed to connect DB', err);
     process.exit(1);
   });
-
-
