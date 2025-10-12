@@ -16,6 +16,7 @@ import AddInterviewExperience from './pages/AddInterviewExperience.jsx'
 import ExperienceApproval from './pages/ExperienceApproval.jsx'
 import PlacedStudentExperience from './pages/PlacedStudentExperience.jsx'
 import Blacklist from './pages/Blacklist.jsx'
+import PlacementDrives from './pages/PlacementDrives.jsx'
 import SkeletonDemo from './pages/SkeletonDemo.jsx'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import { ToastProvider, useToast } from './context/ToastContext.jsx'
@@ -48,6 +49,7 @@ function AppContent() {
     if (p.startsWith('/company')) return 'Companies'
     if (p.startsWith('/drive')) return 'Drives'
     if (p.startsWith('/staff/experience-approval')) return 'Experience Approval'
+    if (p.startsWith('/staff/placement-drives')) return 'Placement Drives'
     if (p.startsWith('/student/profile')) return 'Profile'
     if (p.startsWith('/registrations')) return 'Registrations'
     return 'Dashboard'
@@ -82,6 +84,7 @@ function AppContent() {
         <Route path="/company/:companyName/add-interview-experience" element={<AuthGuard><AddInterviewExperience /></AuthGuard>} />
         <Route path="/placed-student/experience" element={<AuthGuard><PlacedStudentExperience /></AuthGuard>} />
         <Route path="/staff/experience-approval" element={<AuthGuard><ExperienceApproval /></AuthGuard>} />
+        <Route path="/staff/placement-drives" element={<AuthGuard><PlacementDrives /></AuthGuard>} />
         <Route path="/staff/blacklist" element={<AuthGuard><Blacklist /></AuthGuard>} />
         <Route path="/student/profile" element={<AuthGuard><Profile /></AuthGuard>} />
         <Route path="/company/:companyName/register" element={<AuthGuard><RegisterCompany /></AuthGuard>} />

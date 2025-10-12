@@ -1,7 +1,7 @@
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import { useMemo } from 'react'
-import { FiHome, FiBriefcase, FiBookOpen, FiUser, FiLogOut, FiUserMinus } from 'react-icons/fi'
+import { FiHome, FiBriefcase, FiBookOpen, FiUser, FiLogOut, FiUserMinus, FiTarget } from 'react-icons/fi'
 
 export default function Navbar() {
   const { user, logout } = useAuth()
@@ -17,6 +17,7 @@ export default function Navbar() {
     // Add role-specific Interview Experience link
     if (user?.role === 'staff') {
       baseItems.push({ to: '/staff/experience-approval', label: 'Interview Experience', icon: FiBookOpen })
+      baseItems.push({ to: '/staff/placement-drives', label: 'Placement Drives', icon: FiTarget })
       baseItems.push({ to: '/staff/blacklist', label: 'Blacklist', icon: FiUserMinus })
     } else {
       // Students and other roles see approved experiences
