@@ -49,7 +49,7 @@ export default function Login() {
     setDemoLoading(role)
     try {
       if (role === 'student') {
-        await login('studentdemo@gmail.com', 'lol')
+        await login('saravanan.cb22@bitsathy.ac.in', 'lol')
       } else {
         await login('staffdemo@gmail.com', 'lol')
       }

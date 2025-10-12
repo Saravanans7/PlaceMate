@@ -3,6 +3,7 @@ import Registration from '../models/Registration.js';
 import Company from '../models/Company.js';
 import User from '../models/User.js';
 import Application from '../models/Application.js';
+import { sendDriveNotificationToAllStudents } from '../services/emailService.js';
 
 export async function listDrives(req, res, next) {
   try {
@@ -25,7 +26,17 @@ export async function createDrive(req, res, next) {
     const { registration: registrationId } = req.body;
     const reg = await Registration.findById(registrationId).populate('company');
     if (!reg) return res.status(404).json({ success: false, message: 'Registration not found' });
+    
     const drive = await createDriveFromRegistration(reg);
+    
+    // Send email notification to all students
+    try {
+      await sendDriveNotificationToAllStudents(drive, reg);
+    } catch (emailError) {
+      console.error('Failed to send drive notification emails:', emailError);
+      // Don't fail the drive creation if email fails
+    }
+    
     res.status(201).json({ success: true, data: drive });
   } catch (e) { next(e); }
 }
@@ -278,13 +289,25 @@ export async function finalizeDrive(req, res, next) {
 }
 
 // Helper to create a drive document from a populated registration
-export async function createDriveFromRegistration(reg) {
-  return await Drive.create({
+export async function createDriveFromRegistration(reg, sendEmailNotification = true) {
+  const drive = await Drive.create({
     registration: reg._id,
     company: reg.company?._id,
     date: reg.driveDate,
     rounds: (reg.company?.roundsTemplate || []).map((r) => ({ name: r.name, description: r.description, shortlisted: [], results: [] })),
   });
+  
+  // Send email notification if requested
+  if (sendEmailNotification) {
+    try {
+      await sendDriveNotificationToAllStudents(drive, reg);
+    } catch (emailError) {
+      console.error('Failed to send drive notification emails:', emailError);
+      // Don't fail the drive creation if email fails
+    }
+  }
+  
+  return drive;
 }
 
 // Backfill today's drives for registrations that don't yet have a drive
@@ -297,7 +320,8 @@ export async function backfillTodayDrives(req, res, next) {
     for (const reg of regs) {
       const exists = await Drive.findOne({ registration: reg._id });
       if (!exists) {
-        const d = await createDriveFromRegistration(reg);
+        // Don't send emails for backfilled drives as they're not new announcements
+        const d = await createDriveFromRegistration(reg, false);
         created.push(d._id);
       }
     }
