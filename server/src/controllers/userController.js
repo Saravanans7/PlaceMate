@@ -190,7 +190,7 @@ export async function bulkCreateStudents(req, res, next) {
         };
 
         // Hash password (use a default password if not provided)
-        const defaultPassword = row.password || 'password123';
+        const defaultPassword = String(row.password || 'password123');
         studentData.passwordHash = await bcrypt.hash(defaultPassword, 10);
 
         students.push(studentData);
