@@ -276,8 +276,12 @@ export default function Dashboard() {
             >
               <div className="placement-info">
                 <h3>
-                  Company: {placementStatus?.student?.placedCompany || 'N/A'}
+                  Company:{' '}
+                  {typeof placementStatus?.student?.placedCompany === 'object'
+                    ? placementStatus?.student?.placedCompany?.name
+                    : placementStatus?.student?.placedCompany || 'N/A'}
                 </h3>
+
                 <p>
                   Placed on:{' '}
                   {placementStatus?.student?.placedAt
@@ -374,8 +378,14 @@ export default function Dashboard() {
                     <h3>🎉 Congratulations! You're Placed!</h3>
                     <p>
                       <strong>Company:</strong>{' '}
-                      {placementStatus?.student?.placedCompanyName || 'N/A'}
+                      {typeof placementStatus?.student?.placedCompany ===
+                      'object'
+                        ? placementStatus?.student?.placedCompany?.name
+                        : placementStatus?.student?.placedCompanyName ||
+                          placementStatus?.student?.placedCompany ||
+                          'N/A'}
                     </p>
+
                     <p>
                       <strong>Placed on:</strong>{' '}
                       {placementStatus?.student?.placedAt
