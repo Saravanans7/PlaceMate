@@ -211,22 +211,153 @@ export async function sendDriveNotificationToAllStudents(drive, registration) {
       month: 'long',
       day: 'numeric'
     });
-    
+
     const subject = `New Placement Drive: ${companyName} - ${driveDate}`;
     const html = await sendDriveCreatedEmail(drive, registration);
-    
+
     // Send to all students
     const toList = studentEmails.join(',');
-    await t.sendMail({ 
-      from: process.env.SMTP_USER || 'noreply@example.com', 
-      to: toList, 
-      subject, 
-      html 
+    await t.sendMail({
+      from: process.env.SMTP_USER || 'noreply@example.com',
+      to: toList,
+      subject,
+      html
     });
-    
+
     console.log(`Drive notification sent to ${studentEmails.length} students for ${companyName}`);
   } catch (error) {
     console.error('Error sending drive notification emails:', error);
+  }
+}
+
+export async function getRegisteredStudentEmails(registrationId) {
+  try {
+    const Application = (await import('../models/Application.js')).default;
+    const applications = await Application.find({
+      registration: registrationId,
+      status: 'registered'
+    }).populate('student', 'email');
+
+    return applications
+      .map(app => app.student?.email)
+      .filter(email => email);
+  } catch (error) {
+    console.error('Error fetching registered student emails:', error);
+    return [];
+  }
+}
+
+export async function sendRegistrationUpdateEmail(registration) {
+  const t = getTransporter();
+  if (!t) return;
+  try {
+    const studentEmails = await getRegisteredStudentEmails(registration._id);
+    if (studentEmails.length === 0) return;
+
+    const subject = `Registration Updated: ${registration.companyNameCached}`;
+    const html = render(
+      `<p>Hello,</p>
+       <p>The registration details for <b>{{company}}</b> have been updated.</p>
+       <p>Updated Drive Date: {{date}}</p>
+       <p>Please check the placement portal for the latest information.</p>
+       <p>Visit: {{link}}</p>`,
+      {
+        company: registration.companyNameCached,
+        date: new Date(registration.driveDate).toLocaleString(),
+        link: `${process.env.FRONTEND_URL}/company/${encodeURIComponent(registration.companyNameCached)}/register`,
+      }
+    );
+
+    const toList = studentEmails.join(',');
+    await t.sendMail({ from: process.env.SMTP_USER || 'noreply@example.com', to: toList, subject, html });
+    console.log(`Registration update notification sent to ${studentEmails.length} registered students`);
+  } catch (error) {
+    console.error('Error sending registration update emails:', error);
+  }
+}
+
+export async function sendRegistrationDeletedEmail(registration) {
+  const t = getTransporter();
+  if (!t) return;
+  try {
+    const studentEmails = await getRegisteredStudentEmails(registration._id);
+    if (studentEmails.length === 0) return;
+
+    const subject = `Registration Cancelled: ${registration.companyNameCached}`;
+    const html = render(
+      `<p>Hello,</p>
+       <p>We regret to inform you that the registration for <b>{{company}}</b> has been cancelled.</p>
+       <p>Drive Date: {{date}}</p>
+       <p>Please check the placement portal for other opportunities.</p>`,
+      {
+        company: registration.companyNameCached,
+        date: new Date(registration.driveDate).toLocaleString(),
+      }
+    );
+
+    const toList = studentEmails.join(',');
+    await t.sendMail({ from: process.env.SMTP_USER || 'noreply@example.com', to: toList, subject, html });
+    console.log(`Registration deletion notification sent to ${studentEmails.length} registered students`);
+  } catch (error) {
+    console.error('Error sending registration deletion emails:', error);
+  }
+}
+
+export async function sendDriveUpdateEmail(drive, registration) {
+  const t = getTransporter();
+  if (!t) return;
+  try {
+    const studentEmails = await getRegisteredStudentEmails(registration._id);
+    if (studentEmails.length === 0) return;
+
+    const companyName = registration.companyNameCached || 'Unknown Company';
+    const subject = `Drive Updated: ${companyName}`;
+    const html = render(
+      `<p>Hello,</p>
+       <p>The drive details for <b>{{company}}</b> have been updated.</p>
+       <p>Updated Drive Date: {{date}}</p>
+       <p>Please check the placement portal for the latest information.</p>
+       <p>Visit: {{link}}</p>`,
+      {
+        company: companyName,
+        date: new Date(drive.date).toLocaleString(),
+        link: `${process.env.FRONTEND_URL}/staff/drive/${drive._id}`,
+      }
+    );
+
+    const toList = studentEmails.join(',');
+    await t.sendMail({ from: process.env.SMTP_USER || 'noreply@example.com', to: toList, subject, html });
+    console.log(`Drive update notification sent to ${studentEmails.length} registered students`);
+  } catch (error) {
+    console.error('Error sending drive update emails:', error);
+  }
+}
+
+export async function sendDriveDeletedEmail(drive, registration) {
+  const t = getTransporter();
+  if (!t) return;
+  try {
+    const studentEmails = await getRegisteredStudentEmails(registration._id);
+    if (studentEmails.length === 0) return;
+
+    const companyName = registration.companyNameCached || 'Unknown Company';
+    const subject = `Drive Cancelled: ${companyName}`;
+    const html = render(
+      `<p>Hello,</p>
+       <p>We regret to inform you that the drive for <b>{{company}}</b> has been cancelled.</p>
+       <p>Scheduled Date: {{date}}</p>
+       <p>Please check the placement portal for other opportunities.</p>`,
+      {
+        company: companyName,
+        date: new Date(drive.date).toLocaleString(),
+      }
+    );
+
+    const toList = studentEmails.join(',');
+    await t.sendMail({ from: process.env.SMTP_USER || 'noreply@example.com', to: toList, subject, html });
+    console.log(`Drive deletion notification sent to ${studentEmails.length} registered students`);
+  } catch (error) {
+    console.error('Error sending drive deletion emails:', error);
   }
 }
 

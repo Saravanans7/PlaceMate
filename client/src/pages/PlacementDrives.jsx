@@ -9,7 +9,6 @@ export default function PlacementDrives() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [filter, setFilter] = useState('all') // 'all', 'forthcoming', 'ongoing', 'past'
-  const [viewType, setViewType] = useState('all') // 'all', 'registrations', 'drives'
   const [editingDrive, setEditingDrive] = useState(null)
   const [editingRegistration, setEditingRegistration] = useState(null)
   const [editForm, setEditForm] = useState({
@@ -64,46 +63,26 @@ export default function PlacementDrives() {
   }
 
   // Get items by view type for counting
-  function getItemsByViewType(viewTypeFilter = viewType) {
-    switch (viewTypeFilter) {
-      case 'registrations':
-        return registrations.map(reg => ({
-          id: reg._id,
-          type: 'registration',
-          date: reg.driveDate,
-          isUpcoming: new Date(reg.driveDate) > new Date(),
-          isOngoing: new Date(reg.driveDate).toDateString() === new Date().toDateString(),
-          isPast: new Date(reg.driveDate) < new Date()
-        }))
-      case 'drives':
-        return drives.map(drive => ({
-          id: drive._id,
-          type: 'drive',
-          date: drive.date,
-          isUpcoming: false,
-          isOngoing: !drive.isClosed,
-          isPast: drive.isClosed
-        }))
-      default:
-        return [
-          ...registrations.map(reg => ({
-            id: reg._id,
-            type: 'registration',
-            date: reg.driveDate,
-            isUpcoming: new Date(reg.driveDate) > new Date(),
-            isOngoing: new Date(reg.driveDate).toDateString() === new Date().toDateString(),
-            isPast: new Date(reg.driveDate) < new Date()
-          })),
-          ...drives.map(drive => ({
-            id: drive._id,
-            type: 'drive',
-            date: drive.date,
-            isUpcoming: false,
-            isOngoing: !drive.isClosed,
-            isPast: drive.isClosed
-          }))
-        ]
-    }
+  function getItemsByViewType() {
+    const activeRegistrations = registrations.filter(reg => !drives.some(drive => !drive.isClosed && drive.registration?._id === reg._id));
+    return [
+      ...activeRegistrations.map(reg => ({
+        id: reg._id,
+        type: 'registration',
+        date: reg.driveDate,
+        isUpcoming: new Date(reg.driveDate) > new Date(),
+        isOngoing: new Date(reg.driveDate).toDateString() === new Date().toDateString(),
+        isPast: new Date(reg.driveDate) < new Date()
+      })),
+      ...drives.map(drive => ({
+        id: drive._id,
+        type: 'drive',
+        date: drive.date,
+        isUpcoming: false,
+        isOngoing: !drive.isClosed,
+        isPast: drive.isClosed
+      }))
+    ]
   }
 
   // Filter and combine drives and registrations
@@ -111,8 +90,10 @@ export default function PlacementDrives() {
     const now = new Date()
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
 
+    const activeRegistrations = registrations.filter(reg => !drives.some(drive => !drive.isClosed && drive.registration?._id === reg._id));
+
     // Convert registrations to a common format
-    const registrationItems = registrations.map(reg => ({
+    const registrationItems = activeRegistrations.map(reg => ({
       id: reg._id,
       type: 'registration',
       companyName: reg.companyNameCached || reg.company?.name || 'Unknown Company',
@@ -137,18 +118,8 @@ export default function PlacementDrives() {
       isPast: drive.isClosed
     }))
 
-    // Filter by view type first
-    let itemsToFilter = []
-    switch (viewType) {
-      case 'registrations':
-        itemsToFilter = registrationItems
-        break
-      case 'drives':
-        itemsToFilter = driveItems
-        break
-      default:
-        itemsToFilter = [...registrationItems, ...driveItems]
-    }
+    // Always combine
+    let itemsToFilter = [...registrationItems, ...driveItems]
 
     // Then apply time filter
     switch (filter) {
@@ -421,34 +392,7 @@ export default function PlacementDrives() {
       <div className="page-header">
         <h1>Placement Management</h1>
         <p>View and manage all placement registrations and drives</p>
-        <div className="view-indicator">
-          Currently viewing: <strong>{viewType === 'all' ? 'All Items' : viewType === 'registrations' ? 'Registrations Only' : 'Drives Only'}</strong>
-        </div>
       </div>
-
-      {/* View Type Selector */}
-      <Card className="view-type-selector">
-        <div className="filter-buttons">
-          <Button
-            variant={viewType === 'all' ? 'primary' : 'secondary'}
-            onClick={() => setViewType('all')}
-          >
-            All Items ({registrations.length + drives.length})
-          </Button>
-          <Button
-            variant={viewType === 'registrations' ? 'primary' : 'secondary'}
-            onClick={() => setViewType('registrations')}
-          >
-            Registrations ({registrations.length})
-          </Button>
-          <Button
-            variant={viewType === 'drives' ? 'primary' : 'secondary'}
-            onClick={() => setViewType('drives')}
-          >
-            Drives ({drives.length})
-          </Button>
-        </div>
-      </Card>
 
       {/* Filter Buttons */}
       <Card>
@@ -482,11 +426,10 @@ export default function PlacementDrives() {
 
       {filteredItems.length === 0 ? (
         <Card title="No Items Found">
-          <p>No {filter !== 'all' ? filter : ''} {viewType !== 'all' ? viewType : 'placement'} items found.</p>
-          {(filter !== 'all' || viewType !== 'all') && (
+          <p>No {filter !== 'all' ? filter : ''} placement items found.</p>
+          {filter !== 'all' && (
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-              {filter !== 'all' && <Button onClick={() => setFilter('all')}>Show All Time</Button>}
-              {viewType !== 'all' && <Button onClick={() => setViewType('all')}>Show All Types</Button>}
+              <Button onClick={() => setFilter('all')}>Show All Time</Button>
             </div>
           )}
         </Card>

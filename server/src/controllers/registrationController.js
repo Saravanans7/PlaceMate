@@ -2,7 +2,7 @@ import Registration from '../models/Registration.js';
 import Company from '../models/Company.js';
 import User from '../models/User.js';
 import Blacklist from '../models/Blacklist.js';
-import { sendRegistrationOpenEmail } from '../services/emailService.js';
+import { sendRegistrationOpenEmail, sendRegistrationUpdateEmail, sendRegistrationDeletedEmail } from '../services/emailService.js';
 
 export async function createRegistration(req, res, next) {
   try {
@@ -49,6 +49,15 @@ export async function updateRegistration(req, res, next) {
   try {
     const reg = await Registration.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!reg) return res.status(404).json({ success: false, message: 'Not found' });
+
+    // Send notification email to registered students
+    try {
+      await sendRegistrationUpdateEmail(reg);
+    } catch (emailError) {
+      console.error('Failed to send registration update emails:', emailError);
+      // Don't fail the update if email fails
+    }
+
     res.json({ success: true, data: reg });
   } catch (e) { next(e); }
 }
@@ -57,6 +66,14 @@ export async function deleteRegistration(req, res, next) {
   try {
     const reg = await Registration.findById(req.params.id);
     if (!reg) return res.status(404).json({ success: false, message: 'Registration not found' });
+
+    // Send notification email to registered students before deletion
+    try {
+      await sendRegistrationDeletedEmail(reg);
+    } catch (emailError) {
+      console.error('Failed to send registration deletion emails:', emailError);
+      // Continue with deletion even if email fails
+    }
 
     // Delete associated applications first
     const Application = (await import('../models/Application.js')).default;

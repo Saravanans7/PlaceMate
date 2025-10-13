@@ -3,7 +3,7 @@ import Registration from '../models/Registration.js';
 import Company from '../models/Company.js';
 import User from '../models/User.js';
 import Application from '../models/Application.js';
-import { sendDriveNotificationToAllStudents } from '../services/emailService.js';
+import { sendDriveNotificationToAllStudents, sendDriveUpdateEmail, sendDriveDeletedEmail } from '../services/emailService.js';
 
 export async function listDrives(req, res, next) {
   try {
@@ -346,13 +346,22 @@ export async function updateDrive(req, res, next) {
 
     await drive.save();
     const updatedDrive = await Drive.findById(req.params.id).populate('company registration');
+
+    // Send notification email to registered students
+    try {
+      await sendDriveUpdateEmail(updatedDrive, updatedDrive.registration);
+    } catch (emailError) {
+      console.error('Failed to send drive update emails:', emailError);
+      // Don't fail the update if email fails
+    }
+
     res.json({ success: true, data: updatedDrive });
   } catch (e) { next(e); }
 }
 
 export async function deleteDrive(req, res, next) {
   try {
-    const drive = await Drive.findById(req.params.id);
+    const drive = await Drive.findById(req.params.id).populate('registration');
 
     if (!drive) {
       return res.status(404).json({ success: false, message: 'Drive not found' });
@@ -362,6 +371,14 @@ export async function deleteDrive(req, res, next) {
     const hasResults = drive.rounds.some(round => round.results && round.results.length > 0);
     if (hasResults) {
       return res.status(400).json({ success: false, message: 'Cannot delete drive that has started (has round results)' });
+    }
+
+    // Send notification email to registered students before deletion
+    try {
+      await sendDriveDeletedEmail(drive, drive.registration);
+    } catch (emailError) {
+      console.error('Failed to send drive deletion emails:', emailError);
+      // Continue with deletion even if email fails
     }
 
     // Delete associated applications first
