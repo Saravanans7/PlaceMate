@@ -63,8 +63,7 @@ Emails sent:
 
 S3 or Local Uploads
 -------------------
-- If `AWS_ACCESS_KEY_ID` and `S3_BUCKET` exist, resumes upload to S3.
-- Otherwise, resumes are stored locally under `server/uploads` and served at `/uploads`.
+- Students can add Google Drive links to their resumes in their profile.
 
 Security Notes
 --------------

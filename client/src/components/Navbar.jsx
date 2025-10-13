@@ -19,6 +19,7 @@ export default function Navbar() {
       baseItems.push({ to: '/staff/experience-approval', label: 'Interview Experience', icon: FiBookOpen })
       baseItems.push({ to: '/staff/placement-drives', label: 'Placement Drives', icon: FiTarget })
       baseItems.push({ to: '/staff/blacklist', label: 'Blacklist', icon: FiUserMinus })
+      baseItems.push({ to: '/staff/manage-students', label: 'Manage Students', icon: FiUser })
     } else {
       // Students and other roles see approved experiences
       baseItems.push({ to: '/experiences', label: 'Interview Experience', icon: FiBookOpen })

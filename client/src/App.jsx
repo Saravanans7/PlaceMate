@@ -17,6 +17,7 @@ import ExperienceApproval from './pages/ExperienceApproval.jsx';
 import PlacedStudentExperience from './pages/PlacedStudentExperience.jsx';
 import Blacklist from './pages/Blacklist.jsx';
 import PlacementDrives from './pages/PlacementDrives.jsx';
+import ManageStudents from './pages/ManageStudents.jsx';
 import SkeletonDemo from './pages/SkeletonDemo.jsx';
 import { AuthProvider, useAuth } from './context/AuthContext.jsx';
 import { ToastProvider, useToast } from './context/ToastContext.jsx';
@@ -54,6 +55,7 @@ function AppContent() {
     if (p.startsWith('/staff/experience-approval'))
       return 'Experience Approval';
     if (p.startsWith('/staff/placement-drives')) return 'Placement Drives';
+    if (p.startsWith('/staff/manage-students')) return 'Manage Students';
     if (p.startsWith('/student/profile')) return 'Profile';
     if (p.startsWith('/registrations')) return 'Registrations';
     return 'Dashboard';
@@ -199,6 +201,14 @@ function AppContent() {
             element={
               <AuthGuard>
                 <Blacklist />
+              </AuthGuard>
+            }
+          />
+          <Route
+            path="/staff/manage-students"
+            element={
+              <AuthGuard>
+                <ManageStudents />
               </AuthGuard>
             }
           />

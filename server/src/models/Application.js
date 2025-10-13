@@ -12,7 +12,6 @@ const AnswerSchema = new Schema(
 const ApplicationSchema = new Schema({
   registration: { type: Schema.Types.ObjectId, ref: 'Registration', required: true, index: true },
   student: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-  resumeUrl: String,
   answers: { type: [AnswerSchema], default: [] },
   registeredAt: { type: Date, default: Date.now },
   status: { type: String, enum: ['registered', 'withdrawn'], default: 'registered' },

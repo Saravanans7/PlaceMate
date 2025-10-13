@@ -52,7 +52,7 @@ export function FormInput({ label, type = 'text', value, onChange, ...rest }) {
   return (
     <label className="form-field" htmlFor={id}>
       <span>{label}</span>
-      <input id={id} type={type} value={value} onChange={onChange} {...rest} />
+      <input id={id} type={type} value={value} onChange={onChange} className="form-input" {...rest} />
     </label>
   )
 }

@@ -22,11 +22,10 @@ export async function applyToRegistration(req, res, next) {
       });
     }
     
-    // Create application without resume
+    // Create application
     const app = await Application.create({
       registration: reg._id,
       student: req.user._id,
-      resumeUrl: null, // No resume required
       answers,
     });
     res.status(201).json({ success: true, data: app });

@@ -33,7 +33,7 @@ export default function Landing() {
         <div className="feature-grid">
           <div className="feature"><h3>Company Registration</h3><p>Create, open, and manage registrations with eligibility.</p></div>
           <div className="feature"><h3>Live Drives</h3><p>Run rounds, shortlist students, post announcements, finalize selections.</p></div>
-          <div className="feature"><h3>Student Prep</h3><p>Read interview experiences and manage resumes in profile.</p></div>
+          <div className="feature"><h3>Student Prep</h3><p>Read interview experiences and add resume links in profile.</p></div>
         </div>
         <div className="stats">
           <div className="stat"><h4>150+</h4><small>Placements last year</small></div>

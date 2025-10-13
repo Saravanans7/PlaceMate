@@ -30,10 +30,8 @@ export default function Dashboard() {
           setPlacementStatus(data.data || null)
           setLastRefresh(Date.now())
           
-          // If student just got placed, show a special message
-          if (data.data?.student?.isPlaced && !wasPlaced) {
-            alert('🎉 Congratulations! You have been placed!')
-          }
+          // Student placement status updated
+          // No alert needed - placement status is displayed in the UI
         } else {
           console.error('Failed to refresh placement status:', data)
         }

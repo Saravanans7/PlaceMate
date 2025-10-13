@@ -53,44 +53,103 @@ export async function getDriveWithStudentProgress(req, res, next) {
   try {
     const { companyName } = req.params;
     const studentId = req.user._id;
-    
+
     // Find the latest drive for this company
     const drives = await Drive.find({})
       .populate('company registration')
       .sort({ date: -1 });
-    
-    const drive = drives.find(d => 
+
+    const drive = drives.find(d =>
       (d.company?.name || d.registration?.companyNameCached) === companyName
     );
-    
+
     if (!drive) {
       return res.status(404).json({ success: false, message: 'Drive not found for this company' });
     }
-    
+
     // Check if student has applied for this drive
     const application = await Application.findOne({
       registration: drive.registration._id,
       student: studentId,
       status: 'registered'
     });
-    
+
     if (!application) {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'You are not registered for this drive' 
+      return res.status(403).json({
+        success: false,
+        message: 'You are not registered for this drive'
       });
     }
-    
+
     // Calculate student's progress through rounds
     const studentProgress = calculateStudentProgress(drive, studentId);
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       data: {
         ...drive.toObject(),
         studentProgress,
         isRegistered: true,
         registrationDate: application.registeredAt
+      }
+    });
+  } catch (e) { next(e); }
+}
+
+export async function getStudentPlacementStatus(req, res, next) {
+  try {
+    const studentId = req.params.id;
+
+    // Verify that the requesting user can access this student's data
+    // For now, allow students to access their own data, and staff to access any student's data
+    if (req.user.role !== 'staff' && req.user._id.toString() !== studentId) {
+      return res.status(403).json({ success: false, message: 'Access denied' });
+    }
+
+    // Get student basic info and placement status
+    const student = await User.findById(studentId)
+      .select('name email rollNumber batch isPlaced placedAt placedCompany placedCompanyName')
+      .populate('placedCompany');
+
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'Student not found' });
+    }
+
+    // Find all drives where this student is registered and get their progress
+    const applications = await Application.find({
+      student: studentId,
+      status: 'registered'
+    }).populate({
+      path: 'registration',
+      populate: {
+        path: 'company'
+      }
+    });
+
+    const roundProgress = [];
+
+    for (const application of applications) {
+      // Find the drive for this registration
+      const drive = await Drive.findOne({ registration: application.registration._id });
+
+      if (drive && !drive.isClosed) {
+        // Calculate student's progress in this drive
+        const progress = calculateStudentProgress(drive, studentId);
+        roundProgress.push({
+          companyName: application.registration.company?.name || application.registration.companyNameCached,
+          driveId: drive._id,
+          registrationId: application.registration._id,
+          driveDate: drive.date,
+          progress: progress
+        });
+      }
+    }
+
+    res.json({
+      success: true,
+      data: {
+        student: student.toObject(),
+        roundProgress: roundProgress
       }
     });
   } catch (e) { next(e); }

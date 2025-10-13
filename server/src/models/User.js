@@ -2,15 +2,6 @@ import mongoose from 'mongoose';
 
 const { Schema } = mongoose;
 
-const ResumeSchema = new Schema(
-  {
-    url: String,
-    key: String,
-    uploadedAt: { type: Date, default: Date.now },
-  },
-  { _id: false }
-);
-
 const UserSchema = new Schema({
   name: { type: String, required: true },
   username: { type: String, unique: true, sparse: true, index: true },
@@ -26,8 +17,7 @@ const UserSchema = new Schema({
   rollNumber: { type: String },
   phone: { type: String },
   nativePlace: { type: String },
-  resumes: { type: [ResumeSchema], default: [], validate: [arr => arr.length <= 3, 'Max 3 resumes'] },
-  defaultResumeIndex: { type: Number, default: 0 },
+  resumeLink: { type: String, default: '' },
   googleId: { type: String },
   // Placement tracking
   isPlaced: { type: Boolean, default: false },

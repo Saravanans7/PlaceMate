@@ -7,7 +7,8 @@
   "scripts": {
     "dev": "nodemon src/index.js",
     "start": "node src/index.js",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "migrate-resumes": "node scripts/migrate-resumes.js"
   },
   "dependencies": {
     "aws-sdk": "^2.1581.0",
@@ -32,6 +33,7 @@
     "passport": "^0.7.0",
     "passport-google-oauth20": "^2.0.0",
     "placemate": "file:..",
+    "xlsx": "^0.18.5",
     "xss": "^1.0.15"
   },
   "devDependencies": {
